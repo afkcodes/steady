@@ -1,0 +1,1898 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Steady · running app prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Anybody:ital,wdth,wght@0,50..150,400..900;1,50..150,400..900&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ───────── Steady · design tokens ───────── */
+.scr{
+  --bg:#F4F2EE; --raised:#FFFFFF; --well:#EAE7E1; --well2:#E1DDD6;
+  --ink:#16171A; --ink2:#5C5E64; --ink3:#8C8E93; --rule:#E2DED7; --rule2:#CDC8C0;
+  --acc:#D63A1F; --accInk:#B8301A; --accT:rgba(214,58,31,.11);
+  --e0:#D2CCC2; --e1:#F5A386; --e2:#EC6944; --e3:#D63A1F;
+  --good:#2C7649; --goodT:#E1EEE5; --warn:#8F560A; --warnT:#F5E6CC;
+  --btn:#16171A; --btnInk:#F7F5F1; --scrim:rgba(22,23,26,.34);
+  --glow:radial-gradient(110% 62% at 100% 4%, rgba(214,92,52,.17), rgba(214,92,52,0) 64%);
+  --fb:'Hanken Grotesk'; --fd:'Anybody'; --fd-st:68%; --fd-it:italic; --fd-w:800; --fd-ls:-.02em; --fh-st:82%;
+}
+.scr[data-theme=dark]{
+  --bg:#121315; --raised:#1C1D20; --well:#232428; --well2:#2C2D31;
+  --ink:#EFEDE8; --ink2:#A7A6A2; --ink3:#75757A; --rule:rgba(255,255,255,.085); --rule2:rgba(255,255,255,.16);
+  --acc:#FF7A57; --accInk:#FF9473; --accT:rgba(255,122,87,.15);
+  --e0:#3B3C41; --e1:#A94C36; --e2:#E2603E; --e3:#FF7A57;
+  --good:#86C9A0; --goodT:rgba(134,201,160,.13); --warn:#E8B66A; --warnT:rgba(232,182,106,.13);
+  --btn:#EFEDE8; --btnInk:#121315; --scrim:rgba(0,0,0,.55);
+  --glow:radial-gradient(120% 70% at 100% 0%, rgba(238,102,70,.16), rgba(238,102,70,0) 60%);
+}
+
+/* ───────── Screen shell ───────── */
+.scr{position:relative;width:390px;height:844px;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:var(--fb),system-ui,sans-serif;font-stretch:100%;font-size:15px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1;text-align:left}
+.scr *{box-sizing:border-box}
+.scr button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:inherit}
+.scr .sb{position:absolute;top:0;left:0;right:0;height:50px;display:flex;align-items:center;justify-content:space-between;
+  padding:4px 30px 0 34px;font-size:16px;font-weight:600;letter-spacing:-.01em;z-index:6;
+  background:color-mix(in srgb,var(--bg) 80%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.scr .sb.clear{background:transparent}
+.scr .sb svg{display:block}
+.scr .body{position:absolute;top:50px;left:0;right:0;bottom:84px;overflow-y:auto;overflow-x:hidden;padding:0 20px 28px;scrollbar-width:none;z-index:1}
+.scr .body::-webkit-scrollbar{display:none}
+.scr.notab .body{bottom:0}
+.scr.hasfoot .body{padding-bottom:120px}
+.scr .home-ind{position:absolute;bottom:8px;left:50%;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:var(--ink);z-index:9}
+.scr .glow{position:absolute;left:0;right:0;top:0;height:440px;background:var(--glow);pointer-events:none;z-index:0}
+
+/* Tab bar: five equal tabs, icon + label */
+.scr .tabbar{position:absolute;left:0;right:0;bottom:0;height:84px;display:grid;grid-template-columns:repeat(5,1fr);
+  padding:7px 6px 0;border-top:1px solid var(--rule);background:var(--bg);z-index:5}
+.scr .tab{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink3);font-size:10.5px;font-weight:500;letter-spacing:.01em}
+.scr .tab.on{color:var(--ink)}
+.scr .tab.on svg{stroke-width:2}
+
+/* Footer action area (flows) */
+.scr .foot{position:absolute;left:0;right:0;bottom:0;padding:14px 20px 34px;z-index:5;
+  background:linear-gradient(to bottom, color-mix(in srgb,var(--bg) 0%,transparent), var(--bg) 22%)}
+.scr .foot .hint{font-size:12.5px;color:var(--ink3);text-align:center;margin-top:10px}
+
+/* ───────── Type ───────── */
+.scr .disp{font-family:var(--fd),var(--fb),sans-serif;font-stretch:var(--fd-st);font-style:var(--fd-it);font-weight:var(--fd-w);letter-spacing:var(--fd-ls);line-height:.9;font-variant-numeric:tabular-nums}
+.scr .hl{font-family:var(--fh,var(--fd)),var(--fb),sans-serif;font-stretch:var(--fh-st);font-style:var(--fd-it);font-weight:var(--fd-w);line-height:1.02;letter-spacing:-.01em}
+.scr .d1{font-size:124px}
+.scr .d2{font-size:92px}
+.scr .d3{font-size:64px}
+.scr .d4{font-size:44px}
+.scr .d5{font-size:30px;letter-spacing:-.015em}
+.scr .unit{font-family:var(--fb);font-style:normal;font-stretch:100%;font-weight:500;letter-spacing:0;color:var(--ink3)}
+.scr .page-t{font-family:var(--fh,var(--fd)),var(--fb);font-style:var(--fd-it);font-size:34px;font-weight:var(--fd-w);font-stretch:var(--fh-st);letter-spacing:-.01em;line-height:1.05;margin:10px 0 4px}
+.scr .h1{font-family:var(--fh,var(--fd)),var(--fb);font-style:var(--fd-it);font-size:27px;font-weight:var(--fd-w);font-stretch:var(--fh-st);letter-spacing:-.005em;line-height:1.1}
+.scr .h2{font-size:20px;font-weight:600;letter-spacing:-.012em;line-height:1.2}
+.scr .h3{font-size:16px;font-weight:600;letter-spacing:-.005em;line-height:1.3}
+.scr .lead{font-size:17px;line-height:1.4;color:var(--ink2)}
+.scr .sm{font-size:13px;line-height:1.42}
+.scr .xs{font-size:12px;line-height:1.35}
+.scr .mute{color:var(--ink2)}
+.scr .faint{color:var(--ink3)}
+.scr .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.085em;text-transform:uppercase;color:var(--ink3);line-height:1.2}
+.scr .eyebrow b{color:var(--ink);font-weight:600}
+.scr .num{font-variant-numeric:tabular-nums}
+.scr .w5{font-weight:500}.scr .w6{font-weight:600}
+.scr .acc{color:var(--accInk)}
+.scr .goodc{color:var(--good)}.scr .warnc{color:var(--warn)}
+.scr .xp{text-decoration:underline dotted;text-decoration-color:var(--ink3);text-underline-offset:4px;text-decoration-thickness:1.5px;cursor:pointer}
+.scr mark{background:none;color:inherit;font-weight:600;box-shadow:inset 0 -.42em 0 var(--accT)}
+.scr s{color:var(--ink3);text-decoration-thickness:1px}
+
+/* ───────── Layout atoms ───────── */
+.scr .sec{border-top:1px solid var(--rule);padding:20px 0 22px}
+.scr .sec.tight{padding:14px 0 16px}
+.scr .sec.nob{border-top:0}
+.scr .hd{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
+.scr .hd .r{font-size:13px;color:var(--ink2);white-space:nowrap}
+.scr .flex{display:flex;align-items:center;gap:10px}
+.scr .between{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.scr .grow{flex:1;min-width:0}
+.scr .gap4{height:4px}.scr .gap8{height:8px}.scr .gap12{height:12px}.scr .gap16{height:16px}.scr .gap20{height:20px}.scr .gap24{height:24px}.scr .gap32{height:32px}
+.scr .topnav{display:flex;align-items:center;justify-content:space-between;height:48px;margin:0 -6px}
+.scr .ib{width:40px;height:40px;border-radius:20px;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.scr .ib.well{background:var(--well)}
+.scr .pillbtn{height:34px;padding:0 13px 0 11px;border-radius:17px;border:1px solid var(--rule2);display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500}
+.scr .link{font-size:13.5px;font-weight:500;color:var(--ink);display:inline-flex;align-items:center;gap:2px;white-space:nowrap}
+.scr .link svg{color:var(--ink3)}
+
+/* Rows */
+.scr .rows > .row:first-child{border-top:0}
+.scr .row{display:flex;align-items:center;gap:12px;min-height:54px;padding:10px 0;border-top:1px solid var(--rule)}
+.scr .row .ic{width:34px;height:34px;border-radius:10px;background:var(--well);display:flex;align-items:center;justify-content:center;flex:none;color:var(--ink)}
+.scr .row .t{font-size:15px;font-weight:500;line-height:1.3}
+.scr .row .s{font-size:12.5px;color:var(--ink2);line-height:1.35;margin-top:1px}
+.scr .row .v{text-align:right;font-size:15px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.scr .row .v small{display:block;font-size:12px;font-weight:400;color:var(--ink2);margin-top:1px}
+.scr .chev{color:var(--ink3);flex:none}
+
+/* Chips & grades */
+.scr .chip{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:6px;background:var(--well);color:var(--ink2);
+  font-size:12px;font-weight:500;white-space:nowrap;line-height:1}
+.scr .chip svg{flex:none}
+.scr .chip.good{background:var(--goodT);color:var(--good)}
+.scr .chip.warn{background:var(--warnT);color:var(--warn)}
+.scr .chip.acc{background:var(--accT);color:var(--accInk)}
+.scr .chip.ink{background:var(--ink);color:var(--bg)}
+.scr .chip.line{background:transparent;border:1px solid var(--rule2)}
+.scr .grade{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;border:1px solid var(--rule2);
+  font-size:10.5px;font-weight:600;color:var(--ink2);flex:none;line-height:1}
+.scr .gradechip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2);white-space:nowrap}
+.scr .dot{width:7px;height:7px;border-radius:50%;background:var(--acc);display:inline-block;flex:none}
+
+/* Buttons */
+.scr .btn{height:56px;width:100%;border-radius:14px;background:var(--btn);color:var(--btnInk);display:flex;align-items:center;justify-content:center;gap:10px;
+  font-size:16.5px;font-weight:600;letter-spacing:-.005em}
+.scr .btn.split{justify-content:space-between;padding:0 18px 0 16px}
+.scr .btn .sub{font-size:13px;font-weight:500;opacity:.62}
+.scr .btn2{height:50px;width:100%;border-radius:14px;border:1px solid var(--rule2);display:flex;align-items:center;justify-content:center;gap:8px;font-size:15.5px;font-weight:600;color:var(--ink)}
+.scr .btn3{height:44px;border-radius:12px;background:var(--well);display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:14px;font-weight:500;padding:0 14px}
+.scr .tools{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--rule2);border-radius:14px;gap:0;overflow:hidden}
+.scr .tools button{height:46px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13.5px;font-weight:500;color:var(--ink)}
+.scr .tools button + button{border-left:1px solid var(--rule)}
+.scr .tools button svg{color:var(--ink2)}
+.scr .duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Segmented / choice */
+.scr .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--well);border-radius:12px;padding:3px}
+.scr .seg button{height:36px;border-radius:9px;font-size:13.5px;font-weight:500;color:var(--ink2);text-align:center}
+.scr .seg button.on{background:var(--raised);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.06),0 1px 3px rgba(0,0,0,.05)}
+.scr[data-theme=dark] .seg button.on{background:var(--well2);box-shadow:none}
+.scr .choice{display:flex;gap:14px;align-items:flex-start;padding:15px 16px;border:1px solid var(--rule2);border-radius:14px;margin-bottom:10px;width:100%}
+.scr .choice.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.scr .choice .rad{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--rule2);flex:none;margin-top:1px;position:relative}
+.scr .choice.on .rad{border-color:var(--ink)}
+.scr .choice.on .rad::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--ink)}
+.scr .choice .t{font-size:15.5px;font-weight:600;line-height:1.3}
+.scr .choice .s{font-size:13px;color:var(--ink2);margin-top:2px;line-height:1.4}
+.scr .choice .tag{margin-left:auto;flex:none}
+.scr .toggle{width:46px;height:28px;border-radius:14px;background:var(--well2);position:relative;flex:none}
+.scr .toggle::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .15s}
+.scr .toggle.on{background:var(--ink)}
+.scr .toggle.on::after{left:21px;background:var(--bg)}
+.scr .daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.scr .daypick button{height:46px;border-radius:12px;border:1px solid var(--rule2);font-size:14px;font-weight:600;text-align:center}
+.scr .daypick button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.scr .daypick button.long{position:relative}
+.scr .daypick button.long::after{content:"L";position:absolute;top:3px;right:5px;font-size:9px;opacity:.7}
+.scr .tagset{display:flex;flex-wrap:wrap;gap:8px}
+.scr .tagset button{height:36px;padding:0 13px;border-radius:18px;border:1px solid var(--rule2);font-size:14px;font-weight:500}
+.scr .tagset button.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.scr .field{height:52px;border-radius:12px;border:1px solid var(--rule2);display:flex;align-items:center;padding:0 14px;gap:10px;font-size:16px;background:var(--raised)}
+.scr .field .ph{color:var(--ink3)}
+
+/* RPE scale */
+.scr .rpe{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.scr .rpe button{height:52px;border-radius:9px;background:var(--well);font-size:17px;font-weight:600;text-align:center;font-family:var(--fh,var(--fd)),var(--fb);font-style:var(--fd-it);font-stretch:var(--fh-st);position:relative}
+.scr .rpe button.on{background:var(--ink);color:var(--bg)}
+.scr .rpe-words{display:grid;grid-template-columns:2fr 2fr 2fr 2fr 2fr;margin-top:7px;font-size:11.5px;color:var(--ink3)}
+.scr .rpe-words span{border-top:2px solid var(--rule2);padding-top:5px;margin-right:4px}
+.scr .rpe-words span.on{border-color:var(--ink);color:var(--ink);font-weight:500}
+
+/* Bars / progress */
+.scr .bar{height:6px;border-radius:3px;background:var(--well2);overflow:hidden;position:relative}
+.scr .bar > i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--ink)}
+.scr .bar.acc > i{background:var(--acc)}
+.scr .ladder{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.scr .ladder .st{height:8px;border-radius:2px;background:var(--well2);position:relative;overflow:hidden}
+.scr .ladder .st.done{background:var(--ink)}
+.scr .ladder .st > i{position:absolute;left:0;top:0;bottom:0;background:var(--acc)}
+.scr .ladder-l{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:7px}
+.scr .ladder-l span{font-size:11.5px;color:var(--ink3);font-weight:500}
+.scr .ladder-l span.on{color:var(--ink);font-weight:600}
+
+/* ───────── The session strip (bespoke) ───────── */
+.scr .strip{position:relative;height:64px;width:100%}
+.scr .strip .blk{position:absolute;bottom:0;border-radius:4px 4px 1px 1px;min-width:1.5px}
+.scr .strip .e0{background:var(--e0)}
+.scr .strip .e1{background:var(--e1)}
+.scr .strip .e2{background:var(--e2)}
+.scr .strip .e3{background:var(--e3)}
+.scr .strip .str{background:transparent;border:1.5px dashed var(--ink3);border-bottom:0}
+.scr .strip .ghost{opacity:.3}
+.scr .strip.v-timeline .base{display:none}
+.scr .pvd{display:grid;grid-template-columns:42px 1fr;align-items:center;gap:10px}
+.scr .pvd + .pvd{margin-top:8px}
+.scr .pvd > span{font-size:12px;font-weight:600;color:var(--ink2)}
+.scr .wk .sp{display:flex;align-items:center}
+.scr .strip .blk.rep{background:repeating-linear-gradient(90deg,var(--e3) 0 2.5px,transparent 2.5px 4.5px)!important}
+.scr .strip .blk.rep.e2{background:repeating-linear-gradient(90deg,var(--e2) 0 3px,transparent 3px 5px)!important}
+.scr .strip .blk.rep.e1{background:repeating-linear-gradient(90deg,var(--e1) 0 3px,transparent 3px 5px)!important}
+.scr .strip .miss{background:repeating-linear-gradient(135deg,var(--rule2) 0 1.5px,transparent 1.5px 5px)}
+.scr .strip .base{position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--rule2)}
+.scr .strip .now{position:absolute;top:-22px;bottom:-6px;width:2px;margin-left:-1px;background:var(--ink);z-index:3}
+.scr .strip .now b{position:absolute;top:0;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);font-size:11.5px;font-weight:600;
+  padding:2px 6px;border-radius:5px;white-space:nowrap;line-height:1.3}
+.scr .strip .gel{position:absolute;bottom:calc(100% + 4px);width:10px;height:10px;margin-left:-5px;border-radius:50%;border:2px solid var(--ink);background:var(--bg)}
+.scr .strip-l{position:relative;height:30px;margin-top:8px;font-size:12px;color:var(--ink2)}
+.scr .strip-l span{position:absolute;top:0;white-space:nowrap;line-height:1.25}
+.scr .strip-l span b{display:block;font-weight:600;color:var(--ink);font-size:12.5px}
+.scr .strip-l span.r{text-align:right;transform:translateX(-100%)}
+.scr .strip-ax{display:flex;justify-content:space-between;font-size:11px;color:var(--ink3);margin-top:6px}
+.scr .strip-ax span{white-space:nowrap}
+.scr .mini{position:relative;height:16px}
+.scr .mini .blk{border-radius:1.5px 1.5px 0 0}
+
+/* Week timetable */
+.scr .wk .row{min-height:46px;padding:7px 0;gap:10px}
+.scr .wk .day{width:34px;font-size:13px;font-weight:600;color:var(--ink2);flex:none}
+.scr .wk .nm{flex:1;min-width:0;font-size:14.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scr .wk .nm small{display:block;font-size:12px;color:var(--ink3);font-weight:400;margin-top:1px}
+.scr .wk .sp{width:92px;flex:none}
+.scr .wk .stt{width:66px;flex:none;text-align:right;font-size:12.5px;color:var(--ink2);white-space:nowrap}
+.scr .wk .row.today{background:var(--well);margin:0 -12px;padding:7px 12px;border-radius:12px;border-top-color:transparent}
+.scr .wk .row.today + .row{border-top-color:transparent}
+.scr .wk .row.rest .nm{color:var(--ink3);font-weight:400}
+
+/* Notes (why/what changed) */
+.scr .note{display:flex;gap:12px;padding:12px 14px;border-radius:12px;background:var(--well)}
+.scr .note.warn{background:var(--warnT)}
+.scr .note.warn .ni{color:var(--warn)}
+.scr .note .ni{flex:none;margin-top:1px;color:var(--ink2)}
+.scr .note .nt{font-size:14px;line-height:1.42}
+.scr .note .nt b{font-weight:600}
+.scr .note .nl{margin-top:6px}
+.scr .rulel{border-left:2px solid var(--ink);padding:2px 0 2px 14px}
+
+/* Sheets */
+.scr .scrim{position:absolute;inset:0;background:var(--scrim);z-index:20}
+.scr .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--raised);border-radius:26px 26px 0 0;z-index:21;padding:8px 20px 34px;max-height:92%;overflow-y:auto;scrollbar-width:none;
+  box-shadow:0 -8px 30px rgba(0,0,0,.12)}
+.scr[data-theme=dark] .sheet{background:#1D1E21}
+.scr .sheet::-webkit-scrollbar{display:none}
+.scr .grab{width:38px;height:5px;border-radius:3px;background:var(--rule2);margin:0 auto 14px}
+.scr .layer{border-top:1px solid var(--rule);padding:16px 0}
+.scr .layer .lh{display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:600}
+.scr .layer .lh .n{font-size:11px;color:var(--ink3);font-weight:600;letter-spacing:.08em;margin-right:8px}
+.scr .layer p{margin:8px 0 0;font-size:14.5px;color:var(--ink2);line-height:1.5}
+.scr .layer p b{color:var(--ink);font-weight:600}
+.scr .bubble{background:var(--well);border-radius:18px 18px 4px 18px;padding:11px 14px;font-size:15px;margin-left:56px}
+.scr .answer{font-size:15px;line-height:1.5;margin-top:16px}
+.scr .answer p{margin:0 0 10px}
+
+/* Live run */
+.scr .live-top{display:flex;align-items:center;justify-content:space-between;height:44px}
+.scr .rec{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.scr .rec i{width:8px;height:8px;border-radius:50%;background:var(--acc);animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.25}}
+.scr .kpis{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.scr .kpis > div{padding:14px 0 14px 14px;border-left:1px solid var(--rule)}
+.scr .kpis > div:first-child{border-left:0;padding-left:0}
+.scr .kpis .k{font-family:var(--fd),var(--fb);font-style:var(--fd-it);font-size:36px;font-weight:var(--fd-w);font-stretch:var(--fd-st);letter-spacing:var(--fd-ls);line-height:1;font-variant-numeric:tabular-nums}
+.scr .kpis .k small{font-family:var(--fb);font-style:normal;font-size:14px;font-weight:500;font-stretch:100%;color:var(--ink3);letter-spacing:0;margin-left:2px}
+.scr .kpis .l{font-size:12px;color:var(--ink2);margin-top:6px}
+.scr .ctrl{display:flex;align-items:center;justify-content:space-between;padding:0 6px}
+.scr .ctrl .side{width:64px;height:64px;border-radius:32px;background:var(--well);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:500;gap:2px;color:var(--ink)}
+.scr .ctrl .main{width:96px;height:96px;border-radius:48px;background:var(--btn);color:var(--btnInk);display:flex;align-items:center;justify-content:center}
+.scr .cue{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--ink2)}
+.scr .cue q{quotes:"“" "”";color:var(--ink);font-weight:500}
+.scr .banner{border-radius:16px;padding:16px;background:var(--warnT)}
+.scr .banner .bt{font-size:18px;font-weight:600;line-height:1.3;letter-spacing:-.01em}
+.scr .banner .bs{font-size:14px;color:var(--ink2);margin-top:6px;line-height:1.45}
+
+/* Charts */
+.scr .bars{display:flex;align-items:flex-end;gap:5px;height:120px;position:relative}
+.scr .bars .b{flex:1;border-radius:4px 4px 1px 1px;background:var(--well2);position:relative}
+.scr .bars .b.on{background:var(--ink)}
+.scr .bars .b.part{background:repeating-linear-gradient(135deg,var(--rule2) 0 1.5px,transparent 1.5px 5px);box-shadow:inset 0 0 0 1px var(--rule2)}
+.scr .bars .b .cv{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);font-size:11.5px;font-weight:600;padding:3px 7px;border-radius:6px;white-space:nowrap}
+.scr .bars-x{display:flex;gap:5px;margin-top:7px}
+.scr .bars-x span{flex:1;text-align:center;font-size:10.5px;color:var(--ink3)}
+.scr .bars-x span.on{color:var(--ink);font-weight:600}
+.scr .bars .b .pv{position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);font-size:10.5px;color:var(--ink2);white-space:nowrap}
+.scr .rng{position:relative;height:22px}
+.scr .rng .tr{position:absolute;left:0;right:0;top:10px;height:2px;background:var(--rule)}
+.scr .rng .band{position:absolute;top:5px;height:12px;border-radius:6px;background:var(--e1)}
+.scr .rng .pt{position:absolute;top:3px;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:var(--ink);border:3px solid var(--bg)}
+.scr .rng .mk{position:absolute;top:1px;bottom:1px;width:2px;margin-left:-1px;background:var(--ink)}
+.scr .splits .sr{display:grid;grid-template-columns:22px 52px 1fr 42px 36px;align-items:center;gap:10px;height:34px;font-size:14px;border-top:1px solid var(--rule)}
+.scr .splits .sr.h{height:28px;font-size:11px;color:var(--ink3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-top:0}
+.scr .splits .sr .sbar{height:8px;border-radius:2px;background:var(--e1)}
+.scr .splits .sr .sbar.e3{background:var(--e3)}
+.scr .splits .sr .r{text-align:right;color:var(--ink2)}
+
+/* Map */
+.scr .map{position:relative;height:190px;border-radius:14px;overflow:hidden;background:var(--well)}
+.scr .map svg{position:absolute;inset:0}
+
+/* Lists inside sheets/process */
+.scr .steps .st{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:baseline;padding:11px 0;border-top:1px solid var(--rule);font-size:14.5px}
+.scr .steps .st:first-child{border-top:0}
+.scr .steps .st .i{font-size:12px;color:var(--ink3);font-weight:600}
+.scr .steps .st .d{font-weight:600;font-variant-numeric:tabular-nums}
+.scr .steps .st .w{display:block;font-size:12.5px;color:var(--ink2);margin-top:1px}
+.scr .sw{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:6px}
+
+.scr .ava{width:44px;height:44px;border-radius:50%;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px;flex:none}
+.scr .kv{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-top:1px solid var(--rule);font-size:14px}
+.scr .kv:first-child{border-top:0}
+.scr .kv span:first-child{color:var(--ink2)}
+.scr .kv span:last-child{font-weight:600;font-variant-numeric:tabular-nums}
+.scr .lock{display:flex;gap:12px;align-items:center;padding:14px;border-radius:12px;border:1px dashed var(--rule2);color:var(--ink2);font-size:13.5px}
+.scr .anim-tick{transition:none}
+/* ───────── Page chrome around the phone ───────── */
+html{--pg-bg:#E7E4DE;--pg-ink:#16171A;--pg-ink2:#5C5E64;--pg-ink3:#8C8E93;--pg-rule:#D6D2CA;--pg-card:#F4F2EE}
+html[data-pg=dark]{--pg-bg:#0C0D0E;--pg-ink:#EFEDE8;--pg-ink2:#A7A6A2;--pg-ink3:#6E6E72;--pg-rule:#26272A;--pg-card:#141517}
+body{margin:0;background:var(--pg-bg);color:var(--pg-ink);font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+.pg-top{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:20px;padding:14px 28px;background:color-mix(in srgb,var(--pg-bg) 88%,transparent);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--pg-rule);flex-wrap:wrap}
+.pg-brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.pg-brand svg{--ink:#16171A;--e1:#EDB8A7;--e2:#DD7C60;--e3:#CC4528}
+html[data-pg=dark] .pg-brand svg{--ink:#EFEDE8;--e1:#6E3528;--e2:#A94B33;--e3:#EE6646}
+.pg-brand b{display:block;font-size:16px;font-weight:600;letter-spacing:-.01em}
+.pg-brand span{display:block;font-size:12px;color:var(--pg-ink2)}
+.pg-seg{display:inline-flex;background:color-mix(in srgb,var(--pg-ink) 7%,transparent);border-radius:10px;padding:3px}
+.pg-seg button{height:30px;padding:0 11px;border-radius:8px;font-size:13px;font-weight:500;color:var(--pg-ink2);white-space:nowrap}
+.pg-seg button.on{background:var(--pg-card);color:var(--pg-ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.pg-ctrls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pg-lab{font-size:12px;color:var(--pg-ink3)}
+.pg-eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.085em;text-transform:uppercase;color:var(--pg-ink3)}
+
+/* Prototype */
+.pg-proto{display:grid;grid-template-columns:230px 1fr 300px;gap:28px;padding:20px 28px 28px;max-width:1360px;margin:0 auto;align-items:start}
+.pg-nav{position:sticky;top:84px;max-height:calc(100vh - 110px);overflow:auto;scrollbar-width:thin;padding-right:6px}
+.pg-navg{margin-bottom:16px}
+.pg-navh{font-size:11.5px;font-weight:600;letter-spacing:.085em;text-transform:uppercase;color:var(--pg-ink3);margin:0 0 6px 10px}
+.pg-nav button{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:6px 10px;border-radius:8px;font-size:13.5px;color:var(--pg-ink2)}
+.pg-nav button:hover{background:color-mix(in srgb,var(--pg-ink) 5%,transparent)}
+.pg-nav button.on{background:var(--pg-ink);color:var(--pg-bg);font-weight:500}
+.pg-nav button i{font-style:normal;font-size:10.5px;opacity:.6}
+.pg-stage{display:flex;flex-direction:column;align-items:center;gap:14px}
+.pg-phone{border-radius:50px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.07),0 30px 60px -20px rgba(20,20,22,.28),0 12px 24px -12px rgba(20,20,22,.18)}
+html[data-pg=dark] .pg-phone{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 30px 60px -20px rgba(0,0,0,.7)}
+.pg-hint{font-size:12.5px;color:var(--pg-ink3);max-width:360px;text-align:center}
+.pg-notes{position:sticky;top:84px;font-size:14px;line-height:1.5;color:var(--pg-ink2)}
+.pg-notes h2{font-family:'Anybody';font-style:italic;font-size:26px;font-weight:800;font-stretch:82%;letter-spacing:-.01em;color:var(--pg-ink);margin:6px 0 10px;line-height:1.15}
+.pg-notes p{margin:0 0 6px}
+.pg-small{font-size:13px}
+.pg-sep{height:1px;background:var(--pg-rule);margin:18px 0}
+.pg-jumps{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pg-jumps button{height:30px;padding:0 11px;border-radius:15px;border:1px solid var(--pg-rule);font-size:12.5px;color:var(--pg-ink)}
+
+/* Board */
+.pg-board{padding:28px 28px 80px;max-width:2000px;margin:0 auto}
+.pg-btop{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px}
+.pg-btop h1{font-family:'Anybody';font-style:italic;font-size:38px;font-weight:800;font-stretch:82%;letter-spacing:-.01em;margin:0}
+.pg-btop p{margin:4px 0 0;color:var(--pg-ink2);font-size:14px}
+.pg-bgroup{border-top:1px solid var(--pg-rule);padding:22px 0 8px}
+.pg-bgroup h3{font-size:18px;font-weight:600;margin:0 0 16px;letter-spacing:-.01em}
+.pg-bgroup h3 span{font-weight:400;font-size:13px;color:var(--pg-ink3);margin-left:10px}
+.pg-row{display:flex;flex-wrap:wrap;gap:26px 22px}
+.pg-fr{margin:0;cursor:pointer}
+.pg-fr figcaption{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;margin-bottom:8px;color:var(--pg-ink2)}
+.pg-fr figcaption b{color:var(--pg-ink);font-weight:600}
+.pg-frs{border-radius:44px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.08),0 16px 34px -18px rgba(20,20,22,.3)}
+.pg-fr:hover .pg-frs{box-shadow:0 0 0 2px var(--pg-ink),0 16px 34px -18px rgba(20,20,22,.3)}
+.pg-frs .scr *{pointer-events:none}
+
+/* System */
+.pg-sys{max-width:880px;margin:0 auto;padding:36px 28px 100px}
+.pg-sys section{margin-bottom:44px}
+.pg-sys h1{font-family:'Anybody';font-style:italic;font-size:50px;font-weight:800;font-stretch:80%;letter-spacing:-.015em;line-height:1.02;margin:10px 0 14px}
+.pg-lead{font-size:17px;line-height:1.55;color:var(--pg-ink2);max-width:720px}
+.pg-facts{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin-top:22px;font-size:14px;line-height:1.5;color:var(--pg-ink2)}
+.pg-facts b{display:block;color:var(--pg-ink);font-weight:600;margin-bottom:2px}
+.pg-sys .pg-eyebrow{margin-bottom:12px}
+.scr.sysbox{width:auto;height:auto;overflow:visible;border-radius:18px}
+.pg-sws{display:grid;grid-template-columns:repeat(4,1fr);gap:18px 16px}
+.pg-sw i{display:block;height:52px;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);margin-bottom:8px}
+.pg-sw b{display:block;font-size:13px;font-weight:600}
+.pg-sw span{display:block;font-size:12px;color:var(--ink2)}
+.pg-score{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--pg-card);border-radius:14px;overflow:hidden}
+.pg-score th,.pg-score td{text-align:left;padding:10px 14px;border-top:1px solid var(--pg-rule);vertical-align:top}
+.pg-score th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--pg-ink3);font-weight:600;border-top:0}
+.pg-score td:first-child{font-weight:600;white-space:nowrap}
+.pg-score .m{color:#2C7649}.pg-score .w{color:#8F560A}.pg-score .x{color:#B23B20}
+html[data-pg=dark] .pg-score .m{color:#86C9A0}
+html[data-pg=dark] .pg-score .w{color:#E8B66A}
+
+/* Solo render */
+.solo .scr{border-radius:0}
+
+@media (max-width:1100px){.pg-proto{grid-template-columns:1fr}.pg-nav,.pg-notes{position:static;max-height:none}.pg-nav{display:flex;flex-wrap:wrap;gap:12px}}
+</style>
+</head><body><div id="app"></div><script>
+/* One icon family: 24 grid, 1.6 stroke, round caps (Lucide-style, drawn for Steady). */
+const ICONS = {
+  today:'<path d="M12 3.5v2.5M5.6 7.1l1.6 1.6M18.4 7.1l-1.6 1.6M3 15.5h2.2M18.8 15.5H21M7.2 15.5a4.8 4.8 0 0 1 9.6 0M3 19.5h18"/>',
+  plan:'<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  runs:'<circle cx="6" cy="18.5" r="2"/><circle cx="18" cy="5.5" r="2"/><path d="M8 18.5h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16"/>',
+  progress:'<path d="M4 20.5h16M7 16.5v-4M12 16.5V8M17 16.5v-7"/>',
+  you:'<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/>',
+  play:'<path d="M7.5 4.8v14.4L19 12z" fill="currentColor" stroke="none"/>',
+  pause:'<rect x="6.5" y="5" width="3.6" height="14" rx="1" fill="currentColor" stroke="none"/><rect x="13.9" y="5" width="3.6" height="14" rx="1" fill="currentColor" stroke="none"/>',
+  stop:'<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/>',
+  chevR:'<path d="m9.5 6 6 6-6 6"/>', chevL:'<path d="m14.5 6-6 6 6 6"/>', chevD:'<path d="m6 9.5 6 6 6-6"/>', chevU:'<path d="m6 14.5 6-6 6 6"/>',
+  x:'<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+  check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  ask:'<path d="M20 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-4.1A8 8 0 1 1 20 11.5z"/><path d="M9.6 9.6a2.4 2.4 0 1 1 3.3 2.2c-.6.3-.9.8-.9 1.4M12 15.6v.1"/>',
+  talk:'<path d="M20 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-4.1A8 8 0 1 1 20 11.5z"/><path d="M8.5 10h7M8.5 13.2h4.5"/>',
+  move:'<path d="M4 12h11.5M12 7.5l4.5 4.5-4.5 4.5M20 5v14"/>',
+  swap:'<path d="M7.5 4 4 7.5 7.5 11M4 7.5h13M16.5 20l3.5-3.5-3.5-3.5M20 16.5H7"/>',
+  easier:'<path d="M12 4.5v14M6.5 13l5.5 5.5 5.5-5.5"/>',
+  watch:'<rect x="6" y="6.5" width="12" height="11" rx="3"/><path d="M9 6.5 9.6 3h4.8l.6 3.5M9 17.5l.6 3.5h4.8l.6-3.5M12 9.5V12l1.5 1"/>',
+  lock:'<rect x="5" y="11" width="14" height="9.5" rx="2.2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  lap:'<path d="M5.5 21V4M5.5 4h11l-2.2 4 2.2 4h-11"/>',
+  volume:'<path d="M4 9.5v5h3.5L12 18V6L7.5 9.5z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.7a7.5 7.5 0 0 1 0 10.6"/>',
+  alert:'<path d="M12 4.2 2.9 19.6h18.2z"/><path d="M12 10v4.3M12 16.9v.2"/>',
+  info:'<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.2"/>',
+  heart:'<path d="M12 19.5s-7.5-4.5-7.5-9.8A4.2 4.2 0 0 1 12 7.4a4.2 4.2 0 0 1 7.5 2.3c0 5.3-7.5 9.8-7.5 9.8z"/>',
+  moon:'<path d="M19.5 14.6A7.8 7.8 0 1 1 9.4 4.5a6.2 6.2 0 0 0 10.1 10.1z"/>',
+  drop:'<path d="M12 3.5s6 6.4 6 10.9a6 6 0 0 1-12 0C6 9.9 12 3.5 12 3.5z"/>',
+  therm:'<path d="M14 14.3V5.5a2 2 0 0 0-4 0v8.8a4 4 0 1 0 4 0z"/><path d="M12 16.5V10"/>',
+  mountain:'<path d="m2.5 19 6.8-10.5 4.2 6.2 2.6-3.6L21.5 19z"/>',
+  share:'<path d="M12 14.5V3.8M8 7.6l4-3.8 4 3.8M5 12.5v7.5h14v-7.5"/>',
+  download:'<path d="M12 3.8v11M8 11l4 4 4-4M5 19.5h14"/>',
+  bt:'<path d="m7 7.5 10 9-5 4.5V3l5 4.5-10 9"/>',
+  phone:'<rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/>',
+  shield:'<path d="M12 3.5 5 6.2v5.5c0 4.4 3 7.6 7 8.8 4-1.2 7-4.4 7-8.8V6.2z"/><path d="m9 12 2.2 2.2L15.5 10"/>',
+  eyeoff:'<path d="M3.5 3.5l17 17M10.4 6.2A9.6 9.6 0 0 1 12 6c5 0 8.4 4.4 9.4 6-.5.8-1.5 2.2-2.9 3.4M6.4 7.9C4.4 9.3 3.1 11.1 2.6 12c1 1.6 4.4 6 9.4 6 1.4 0 2.7-.3 3.9-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+  pin:'<path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/>',
+  shoe:'<path d="M3 16.8V9.6c0-.5.5-.9 1-.7l3.4 1 1.6-2.6 3 1.3c1.3 2.4 3.4 3.7 6.2 4.2 1.7.3 2.8 1.6 2.8 3.2v.8z"/><path d="M3 19.5h18M9.2 11.4l1.5.6M11.2 9.9l1.5.6"/>',
+  dumbbell:'<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/>',
+  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  cloud:'<path d="M7 18.5h10.2a4 4 0 0 0 .4-8A5.6 5.6 0 0 0 6.9 11a3.75 3.75 0 0 0 .1 7.5z"/>',
+  sliders:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
+  arrowR:'<path d="M5 12h14M13 6l6 6-6 6"/>', arrowUp:'<path d="M12 19V5M6 11l6-6 6 6"/>', arrowDn:'<path d="M12 5v14M6 13l6 6 6-6"/>',
+  undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  book:'<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/>',
+  gel:'<path d="M8 3h8l-1.2 3.5v11a2.8 2.8 0 0 1-5.6 0v-11z"/><path d="M9.2 10h5.6"/>',
+  users:'<circle cx="9" cy="8.5" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3.5 3.5 0 0 1 0 7M18 14.5a5.5 5.5 0 0 1 3 5.5"/>',
+  flask:'<path d="M9 3h6M10 3v6.2L4.6 18.8A1.5 1.5 0 0 0 5.9 21h12.2a1.5 1.5 0 0 0 1.3-2.2L14 9.2V3"/><path d="M7.2 15h9.6"/>',
+  bolt:'<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>',
+  repeat:'<path d="M4 12a8 8 0 0 1 13.7-5.7L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.7L4 15.5M4 20v-4.5h4.5"/>',
+  map:'<path d="M9 4.5 3.5 6.5v13L9 17.5l6 2 5.5-2v-13L15 6.5zM9 4.5v13M15 6.5v13"/>',
+  gps:'<circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+  bell:'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+  more:'<circle cx="5.5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18.5" cy="12" r="1.3" fill="currentColor"/>',
+  target:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>',
+  file:'<path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z"/><path d="M14 3.5v5h5"/>',
+  link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  body:'<circle cx="12" cy="4.8" r="2"/><path d="M8 21l1.6-6.5L12 13l2.4 1.5L16 21M7 10.5l5-2.5 5 2.5M12 8v5"/>',
+  sparkle:'<path d="M12 3.5l1.8 5 5 1.8-5 1.8-1.8 5-1.8-5-5-1.8 5-1.8z"/>',
+};
+function I(name, size = 20, extra = '') {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ${extra}>${ICONS[name] || ''}</svg>`;
+}
+
+/* ───────── Data: one runner (Priya), seen at each stage of the ladder ─────────
+   Effort levels for the session strip:
+   0 walk / very easy · 1 easy, full sentences · 2 steady, short phrases · 3 hard, a few words */
+const EFFORT = [
+  {k:'Walk', talk:'Walk or very easy'},
+  {k:'Easy', talk:'Full sentences'},
+  {k:'Steady', talk:'Short phrases'},
+  {k:'Hard', talk:'A few words'},
+];
+const R = (n, pat) => Array.from({length:n}, () => pat).flat();
+
+const STAGES = [
+  {n:1, name:'Start', who:'Never run, or back after years', goal:'Run 30 minutes non-stop'},
+  {n:2, name:'Build', who:'Can run 30 minutes', goal:'Run 3–4 times a week; a first 5K'},
+  {n:3, name:'Develop', who:'Regular 5K runner', goal:'10K to half marathon; first faster sessions'},
+  {n:4, name:'Perform', who:'Half and marathon runner', goal:'Race-specific blocks to a target time'},
+  {n:5, name:'Compete', who:'Experienced or coached', goal:'A full season of races'},
+];
+
+/* Sessions: blocks are [effort, minutes] */
+const S = {
+  rw1:   {name:'Run 1 · walk 1½', min:25, blocks:[[0,5],...R(8,[[1,1],[0,1.5]])], labels:[[0,5,'Walk','5 min'],[5,25,'Run 1 · walk 1½','8 times']]},
+  rw15:  {name:'Run 1½ · walk 1½', min:25, blocks:[[0,5],...R(6,[[1,1.5],[0,1.5]]),[0,2]], labels:[[0,5,'Walk','5 min'],[5,23,'Run 1½ · walk 1½','6 times']]},
+  walk30:{name:'Walk 30', min:30, blocks:[[0,30]], labels:[[0,30,'Brisk walk','30 min']]},
+  restart:{name:'Easy 20', min:20, blocks:[[0,3],[1,14],[0,3]], labels:[[0,3,'Walk','3'],[3,17,'Easy','14 min']]},
+  e25:   {name:'Easy 25', min:25, blocks:[[0,3],[1,19],[0,3]]},
+  e30w:  {name:'Easy 30', min:30, blocks:[[0,3],[1,24],[0,3]], labels:[[0,3,'Walk','3'],[3,27,'Easy run','24 min'],[27,30,'Walk','3']]},
+  long40:{name:'Long 40', min:40, blocks:[[0,3],[1,34],[0,3]]},
+  e35:   {name:'Easy 35', min:35, blocks:[[1,35]]},
+  hills: {name:'Hills 8 × 45 s', min:40, blocks:[[1,12],...R(8,[[3,.75],[0,1.5]]),[1,10]]},
+  e40s:  {name:'Easy 40 + strides', short:'Easy + strides', min:40, blocks:[[1,32],...R(6,[[3,1/3],[0,1]])], labels:[[0,32,'Easy run','32 min'],[32,40,'Strides','6 × 20 s']]},
+  tempo: {name:'Tempo 3 × 8 min', short:'Tempo 3 × 8', min:50, blocks:[[1,12],...R(3,[[2,8],[1,2]]),[1,8]], labels:[[0,12,'Easy','12'],[12,42,'3 × 8 min steady','2 min easy between'],[42,50,'Easy','8']]},
+  long80:{name:'Long 80', min:80, blocks:[[1,80]]},
+  e50:   {name:'Easy 50', min:50, blocks:[[1,50]]},
+  int5:  {name:'5 × 1 km', min:56, blocks:[[1,15],...R(5,[[3,4.2],[0,2]]),[1,10]]},
+  mp60:  {name:'Steady 60 · 3 × 10 min', short:'Marathon pace', min:60, blocks:[[1,12],...R(3,[[2,10],[1,3]]),[1,9]], labels:[[0,12,'Easy','12'],[12,51,'3 × 10 min at marathon pace','3 min easy between'],[51,60,'Easy','9']]},
+  e45:   {name:'Easy 45 + strength', short:'Easy 45 + gym', min:45, blocks:[[1,45]]},
+  e40:   {name:'Easy 40', min:40, blocks:[[1,40]]},
+  long32:{name:'Long 32 km · fuel 70 g/h', short:'Long 32 km', min:165, blocks:[[1,120],[2,35],[1,10]]},
+  e60:   {name:'Easy 60', min:60, blocks:[[1,60]]},
+  e50s:  {name:'Easy 50 + strides', short:'Easy + strides', min:50, blocks:[[1,44],...R(4,[[3,1/3],[0,1.2]])]},
+  i800:  {name:'6 × 800 m', min:50, blocks:[[1,15],...R(6,[[3,2.75],[0,1.5]]),[1,9.5]], labels:[[0,15,'Warm-up','15 + drills'],[15,40.5,'6 × 800 m at 3:26 /km','90 s jog between'],[40.5,50,'Easy','10']]},
+  tempo25:{name:'Tempo 25', min:45, blocks:[[1,12],[2,25],[1,8]]},
+  long26:{name:'Long 26 km', min:120, blocks:[[1,120]]},
+  str15: {name:'Strength 15', strength:true}, str20:{name:'Strength 20', strength:true},
+};
+
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+/* Per-stage world */
+const W = {
+1:{
+  label:'Week 3 of 10', goalLine:'30 minutes non-stop', today:'rw15',
+  hero:{eyebrow:'Today’s run', title:'Run 1½ min, walk 1½ min', big:'25', unit:'min', talk:'Full sentences the whole way. Slow is right.', pace:null},
+  why:{chip:'Up from 1 min', text:'Monday felt <b>4 out of 10</b>, so each run gets 30 seconds longer.'},
+  week:[
+    ['Mon','rw1','done','✓ felt 4/10'],['Tue',null,'rest'],['Wed','rw15','today'],['Thu',null,'rest'],
+    ['Fri','rw15','plan'],['Sat',null,'rest'],['Sun','walk30','plan','optional']],
+  weekSum:'1 of 3 runs',
+  insight:{text:'You ran <mark>8 minutes</mark> on Monday, in 1-minute pieces. Three weeks ago it was 4.', link:'progress'},
+  ladder:{p:.12, checks:[['Run 30 min non-stop','Longest so far: 1½ min',.05],['Do it twice, rated easy to moderate','0 of 2',0]]},
+  weeks:{label:'Minutes running', unit:'min', vals:[12,16,8], part:true, x:['Wk 1','Wk 2','Wk 3']},
+  streak:'3 weeks running',
+},
+2:{
+  label:'Week 5 · first 5K on Sat 14 Nov', goalLine:'Hackney Marshes parkrun, 14 Nov', today:'e30w',
+  hero:{eyebrow:'Today’s run', title:'Easy run', big:'30', unit:'min', talk:'Full sentences', pace:'about 6:50–7:20 /km'},
+  why:{chip:'Easy-pace check', text:'Your last <b>2 easy runs</b> drifted into short-phrases effort. Today, slow down on the hills.'},
+  week:[
+    ['Mon','e25','done','✓ 3.6 km'],['Tue','str15','done','✓ done'],['Wed','e30w','today'],['Thu',null,'rest'],
+    ['Fri','str15','plan'],['Sat','long40','plan','long'],['Sun',null,'rest']],
+  weekSum:'1 of 3 runs',
+  insight:{text:'Saturday’s 40 min is <mark>9% longer</mark> than your longest run this month. Under 10%, so it stays.', link:'session'},
+  ladder:{p:.55, checks:[['Run consistently: 8 of the last 10 weeks','5 of 10 so far',.5],['Get a 5K time','parkrun on Sat 14 Nov',0]]},
+  weeks:{label:'Time running', unit:'min', vals:[62,70,0,74,88,96,25], x:['22 Sep','29','6 Oct','13','20','27','Now'], miss:2},
+  streak:'4 weeks running',
+},
+3:{
+  label:'Week 3 of 20 · Bath Half', goalLine:'Bath Half, Sun 15 Mar · under 2:00', today:'e40s',
+  hero:{eyebrow:'Today’s run', title:'Easy run + strides', big:'40', unit:'min', talk:'Full sentences', pace:'6:05–6:35 /km'},
+  why:{chip:'Moved from Wed', moved:true, text:'Tempo moved to Friday. You rated Tuesday’s hills <b>8/10</b>, harder than planned, so today stays easy.'},
+  week:[
+    ['Mon','e35','done','✓ 5.7 km'],['Tue','hills','done','✓ 7.2 km'],['Wed','e40s','today'],['Thu','str20','plan'],
+    ['Fri','tempo','moved','moved'],['Sat',null,'rest'],['Sun','long80','plan','13.1 km']],
+  weekSum:'2 of 5 sessions',
+  insight:{text:'Same effort, <mark>12 s/km faster</mark> than in August.', sub:'Easy pace at 145 bpm: 6:02 /km (Aug: 6:14)', link:'metric'},
+  ladder:{p:.3, checks:[['Long run of 18 km+ with no spike','Longest so far: 13.1 km',.72],['Critical speed steady for 4 weeks','2 of 4 weeks',.5],['5K under 26 min','Done · 24:51 on 12 Sep',1]]},
+  weeks:{label:'Time running', unit:'h', vals:[3.1,3.4,2.2,3.6,3.9,3.5,4.1,4.3,3.8,4.4,4.6,1.4], x:['Aug','','','','Sep','','','','Oct','','','Now'], part:true},
+  streak:'11 weeks running',
+},
+4:{
+  label:'Week 13 of 18 · Valencia', goalLine:'Valencia Marathon, Sun 6 Dec · 3:30', today:'mp60',
+  hero:{eyebrow:'Today’s run', title:'Steady 60, with 3 × 10 min', big:'60', unit:'min', talk:'Short phrases in the 10s', pace:'4:58 /km in the 10s'},
+  why:{chip:'As planned', text:'HRV <b>49 ms</b> and sleep <b>7 h 10</b> are inside your normal. You said you feel <b>OK</b>. No change.'},
+  recovery:{hrv:49, lo:46, hi:60, sleep:'7 h 10', rhr:48},
+  week:[
+    ['Mon','e50','done','✓ 9.4 km'],['Tue','int5','done','✓ 12.6 km'],['Wed','mp60','today'],['Thu','e45','plan'],
+    ['Fri',null,'rest'],['Sat','e40','plan'],['Sun','long32','plan','32 km']],
+  weekSum:'2 of 6 sessions',
+  insight:{text:'Late in long runs you now slow <mark>4%</mark> at the same heart rate. In September it was 7%.', link:'durability'},
+  ladder:{p:1, checks:[['There’s no ceiling at Perform','Move to Compete when you want a full season',1]]},
+  weeks:{label:'Time running', unit:'h', vals:[5.8,6.1,6.6,5.2,6.9,7.2,7.6,6.0,7.9,8.1,6.4,2.1], x:['Aug','','','','Sep','','','','Oct','','','Now'], part:true},
+  streak:'34 weeks running',
+},
+5:{
+  label:'Spring season · London', goalLine:'London Marathon, Sun 26 Apr · 2:52', today:'i800',
+  hero:{eyebrow:'Today’s run', title:'6 × 800 m', big:'50', unit:'min', talk:'A few words in the reps', pace:'3:26 /km · 318–326 W'},
+  why:{chip:'Coach moved this', moved:true, text:'Sam (coach) moved the track session from Thursday: <b>“Track’s free Wednesday, Thursday stays easy.”</b>'},
+  recovery:{hrv:71, lo:64, hi:82, sleep:'7 h 45', rhr:41},
+  week:[
+    ['Mon','e60','done','✓ 12.1 km'],['Tue','e50s','done','✓ 10.2 km'],['Wed','i800','today'],['Thu','e45','plan'],
+    ['Fri','e40','plan'],['Sat','tempo25','plan'],['Sun','long26','plan','26 km']],
+  weekSum:'2 of 7 sessions',
+  insight:{text:'Your 800 m reps averaged <mark>4 s faster</mark> than the same session in September, at the same power.', link:'summary'},
+  ladder:{p:1, checks:[['Top of the ladder','Season mode: several races, coach and lab tools',1]]},
+  weeks:{label:'Time running', unit:'h', vals:[7.9,8.4,8.8,6.2,8.9,9.3,9.1,7.0,9.6,9.8,8.9,2.6], x:['Aug','','','','Sep','','','','Oct','','','Now'], part:true},
+  streak:'2 years, 12 weeks',
+},
+};
+
+/* Metrics that unlock by stage. grade: A/B/C · conf words */
+const METRICS = [
+  {s:1, until:2, id:'mins', name:'Minutes running this week', v:'8', u:'of 27 min', note:'Walking doesn’t count', g:'A'},
+  {s:1, until:2, id:'longest', name:'Longest non-stop run', v:'1:30', u:'min', note:'Today: 1½ min, 6 times', g:'A'},
+  {s:1, until:2, id:'feel', name:'How runs felt', v:'4, 5, 4', u:'out of 10', note:'Right where it should be', g:'A'},
+  {s:2, until:3, id:'easy', name:'Easy-pace check', v:'2 of 4', u:'too hard', note:'Easy runs that drifted', g:'B', warn:true},
+  {s:2, until:3, id:'spike', name:'Long-run spike guard', v:'+9%', u:'Sat', note:'Within 10% of your longest', g:'B'},
+  {s:2, until:3, id:'pace2', name:'Average easy pace', v:'7:04', u:'/km', d:'8 s faster', note:'than 4 weeks ago', g:'B'},
+  {s:3, id:'cs', name:'Critical speed', v:'5:05', u:'/km', d:'6 s faster', note:'since August · fairly sure', g:'B', go:'metric'},
+  {s:3, id:'pred', name:'Half marathon prediction', v:'1:56–2:03', u:'', note:'likely 1:59 · fairly sure', g:'B', go:'predictor'},
+  {s:3, id:'hr145', name:'Easy pace at 145 bpm', v:'6:02', u:'/km', d:'12 s faster', note:'than August', g:'C', go:'explain'},
+  {s:3, id:'split', name:'Intensity split', v:'74 · 18 · 8', u:'%', note:'easy · steady · hard · pyramidal', g:'B'},
+  {s:3, id:'load', name:'Fitness and fatigue', v:'Building', u:'', note:'Fatigue high · freshest on Sat', g:'C'},
+  {s:3, id:'vo2', name:'VO₂max (from your watch)', v:'45–50', u:'', note:'rough estimate · shown as a range', g:'C'},
+  {s:4, id:'dur', name:'Durability', v:'−4%', u:'after 75 min', d:'from −7%', note:'pace at the same heart rate', g:'C', go:'durability'},
+  {s:4, id:'hrv', name:'Overnight HRV', v:'49', u:'ms', note:'inside your normal (46–60)', g:'C'},
+  {s:4, id:'heat', name:'Heat response', v:'+2.1', u:'s/km per °C', note:'above 15 °C · learned from 9 runs', g:'C'},
+  {s:4, id:'fuel', name:'Fuelling practised', v:'70', u:'g/h', note:'4 of 5 long runs at 60+ g/h', g:'B', go:'race'},
+  {s:5, id:'power', name:'Critical power', v:'301', u:'W', note:'Stryd · not comparable across brands', g:'C'},
+  {s:5, id:'dyn', name:'Ground contact time', v:'218', u:'ms', note:'trend only · no good or bad', g:'C'},
+  {s:5, id:'dfa', name:'Aerobic threshold (lab)', v:'148', u:'bpm', note:'DFA-α1 · chest strap only · experimental', g:'C', lab:true},
+];
+
+const CHANGES = [
+  {when:'Today, 06:10', who:'Plan', items:[['Wed','Tempo 3 × 8 min','Easy 40 + strides'],['Fri','Easy 35','Tempo 3 × 8 min']],
+   because:[['RPE','Tue hills felt 8/10 (planned 6)']], open:true},
+  {when:'Sat 24 Oct', who:'Plan', items:[['Sun','Long 85 min','Long 75 min']],
+   because:[['Missed','You skipped Thursday’s easy run'],['Rule','We never add missed minutes back']]},
+  {when:'Tue 20 Oct', who:'You', items:[['Thu','Easy 35 at 07:00','Easy 35 at 12:30']],
+   because:[['If-then','“If it’s raining, I’ll run at lunch”']]},
+  {when:'Sun 11 Oct', who:'Plan', items:[['Sun','Long 75 at 6:20 /km','Long 75 at 6:32 /km']],
+   because:[['Heat','22 °C forecast at 11:00 · your heat response +2 s/km per °C']]},
+];
+
+/* ───────── UI helpers ───────── */
+const H = [0.3, 0.55, 0.78, 1]; // strip height by effort
+
+function statusBar(time = '9:41', clear = false) {
+  return `<div class="sb${clear ? ' clear' : ''}"><span>${time}</span><span class="flex" style="gap:6px">
+  <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+  <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.2c2.4 0 4.6.9 6.2 2.5l1.2-1.2A10.4 10.4 0 0 0 8 .5 10.4 10.4 0 0 0 .6 3.5l1.2 1.2A8.7 8.7 0 0 1 8 2.2zm0 3.4c1.5 0 2.8.6 3.8 1.5L13 5.9A7 7 0 0 0 8 3.9a7 7 0 0 0-5 2l1.2 1.2c1-.9 2.3-1.5 3.8-1.5zm0 3.4c.6 0 1.1.2 1.5.6L8 11.1 6.5 9.6c.4-.4.9-.6 1.5-.6z"/></svg>
+  <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="9" rx="2" fill="currentColor"/><path d="M25 4.5v4c.8-.3 1.4-1.1 1.4-2s-.6-1.7-1.4-2z" fill="currentColor" opacity=".45"/></svg>
+  </span></div>`;
+}
+
+const TABS = [['today','Today','today'],['plan','Plan','plan'],['runs','Runs','runs'],['progress','Progress','progress'],['you','You','you']];
+function tabbar(active) {
+  return `<nav class="tabbar">${TABS.map(([id, label, ic]) =>
+    `<button class="tab${id === active ? ' on' : ''}" data-go="${id}">${I(ic, 24)}<span>${label}</span></button>`).join('')}</nav><div class="home-ind"></div>`;
+}
+
+const sum = a => a.reduce((x, y) => x + y, 0);
+function sessBlocks(s) { return (typeof s === 'string' ? S[s] : s).blocks; }
+
+/* The session strip: every run drawn to scale, height = effort.
+   A set of short repeats (6 × 20 s strides, 8 × 45 s hills) is drawn as one block cut into
+   one segment per rep, so it reads as "6 things" instead of a comb of slivers. */
+let STRIP_V = 'timeline';           // timeline (shipped) · segments · profile
+const SET_PX = 26;                  // a repeat unit narrower than this joins a set
+function groupSets(bl, px) {
+  const total = sum(bl.map(x => x[1]));
+  const eq = (x, y) => x && y && x[0] === y[0] && Math.abs(x[1] - y[1]) < 1e-6, out = [];
+  for (let i = 0; i < bl.length;) {
+    const a = bl[i], b = bl[i + 1]; let n = 0, j = i;
+    while (eq(bl[j], a) && eq(bl[j + 1], b)) { n++; j += 2; }
+    if (n >= 3 && (a[1] + b[1]) / total * px < SET_PX) { out.push([Math.max(a[0], b[0]), n * (a[1] + b[1]), {n}]); i = j; }
+    else { out.push(a); i++; }
+  }
+  return out;
+}
+function collapseReps(bl) {   // week minis: any short or many repeats become one striped block
+  const eq = (x, y) => x && y && x[0] === y[0] && Math.abs(x[1] - y[1]) < 1e-6, out = [];
+  for (let i = 0; i < bl.length;) {
+    const a = bl[i], b = bl[i + 1]; let n = 0, j = i;
+    while (eq(bl[j], a) && eq(bl[j + 1], b)) { n++; j += 2; }
+    if (n >= 4 || (n >= 2 && a[1] < 2)) { out.push([Math.max(a[0], b[0]), n * (a[1] + b[1]), 'rep']); i = j; } else { out.push(a); i++; }
+  }
+  return out;
+}
+function stripLayout(blocks, px, mini, gap) {
+  const minRun = mini ? 2.5 : 8, minWalk = mini ? 1.5 : 5;
+  const n = blocks.length, avail = px - gap * (n - 1);
+  const mins = blocks.map(b => b[2] && b[2].n ? b[2].n * 8 + (b[2].n - 1) * 2 : b[0] === 0 ? minWalk : minRun);
+  const fixed = new Array(n).fill(false);
+  let w = [];
+  for (let k = 0; k < 6; k++) {
+    const fixedPx = mins.reduce((a, m, i) => a + (fixed[i] ? m : 0), 0);
+    const freeT = blocks.reduce((a, bl, i) => a + (fixed[i] ? 0 : bl[1]), 0);
+    w = blocks.map((bl, i) => fixed[i] ? mins[i] : bl[1] / freeT * (avail - fixedPx));
+    let changed = false;
+    w.forEach((x, i) => { if (!fixed[i] && x < mins[i]) { fixed[i] = true; changed = true; } });
+    if (!changed) break;
+  }
+  let x = 0, t = 0;
+  const L = w.map((wi, i) => { const r = {l:x, w:wi, t0:t, t1:t + blocks[i][1], e:blocks[i][0], rep:blocks[i][2]}; x += wi + gap; t += blocks[i][1]; return r; });
+  const tx = time => { for (const r of L) if (time <= r.t1 + 1e-9) return r.l + (time - r.t0) / (r.t1 - r.t0) * r.w; return px; };
+  return {L, tx, px};
+}
+function strip(sess, o = {}) {
+  const s = typeof sess === 'string' ? S[sess] : sess;
+  const mini = !!o.mini, V = o.v || STRIP_V;
+  const px = o.px || 350;
+  const src = o.blocks || s.blocks;
+  const blocks = mini ? collapseReps(src) : groupSets(src, px);
+  const total = sum(blocks.map(b => b[1]));
+  const flat = V === 'timeline';
+  const h = o.h || (flat ? 36 : 64);
+  const gap = mini ? 1.5 : V === 'profile' ? 0 : 3;
+  const {L, tx} = stripLayout(blocks, px, mini, gap);
+  const P = v => (v / px * 100).toFixed(3) + '%';
+  const ht = e => flat ? 100 : H[e] * 100;
+  const rad = w => flat ? Math.min(mini ? 2.5 : 8, w / 2) : mini ? Math.min(1.5, w / 2) : V === 'profile' ? Math.min(3, w / 2) : Math.min(6, w / 2);
+  const corners = w => { const r = rad(w).toFixed(1); return flat ? `${r}px` : `${r}px ${r}px ${mini ? 0 : 2}px ${mini ? 0 : 2}px`; };
+  const one = (l, w, e, cls = '', set) => {
+    if (set && set.n && !mini) {   // a set: one cell per rep
+      const g = V === 'profile' ? 1.5 : 2;
+      const cw = (w - g * (set.n - 1)) / set.n;
+      return Array.from({length:set.n}, (_, i) => `<div class="blk e${e} ${cls}" style="left:${P(l + i * (cw + g))};width:${P(cw)};height:${ht(e)}%;border-radius:${corners(cw)}"></div>`).join('');
+    }
+    return `<div class="blk e${e} ${set === 'rep' ? 'rep ' : ''}${cls}" style="left:${P(l)};width:${P(w)};height:${ht(e)}%;border-radius:${corners(w)}"></div>`;
+  };
+  const draw = cls => L.map(r => one(r.l, r.w, r.e, cls, r.rep)).join('');
+  let inner = '';
+  if (o.at != null) {
+    const xp = tx(Math.min(o.at, total)) / px * 100;
+    inner = draw('ghost') + `<div style="position:absolute;inset:0;clip-path:inset(-30px ${100 - xp}% 0 0)">${draw('')}</div>`
+      + `<div class="now" style="left:${xp}%"><b style="${xp > 86 ? 'left:auto;right:-1px;transform:none' : xp < 14 ? 'left:-1px;transform:none' : ''}">${o.atLabel || ''}</b></div>`;
+  } else if (o.actual) {
+    const act = groupSets(o.actual, px);
+    let t = 0;
+    const done = act.map(([e, m, set]) => { const l = tx(t), r = tx(t + m); t += m;
+      return one(l, Math.max(3, r - l - (r - l > 12 ? gap : 0)), e, '', set); }).join('');
+    if (flat) {   // plan and done as two bars on one time scale
+      const row = (lab, body) => `<div class="pvd"><span>${lab}</span><div class="strip v-timeline" style="height:${h}px">${body}</div></div>`;
+      return row('Plan', draw('')) + row('Done', done);
+    }
+    inner = done + L.filter(r => r.w > 10).map(r => `<div class="blk str" style="left:${P(r.l)};width:${P(r.w)};height:${H[r.e] * 100}%;border-radius:${corners(r.w)}"></div>`).join('');
+  } else inner = draw(o.miss ? 'miss' : '');
+  if (o.gels) inner += o.gels.map(g => `<div class="gel" style="left:${tx(g) / px * 100}%"></div>`).join('');
+  let html = `<div class="strip v-${V}${o.cls ? ' ' + o.cls : ''}" style="height:${h}px${o.w ? ';width:' + o.w : ''}">${inner}${flat ? '' : '<div class="base"></div>'}</div>`;
+  if (o.labels !== false && s.labels && !mini) {
+    html += `<div class="strip-l">${s.labels.map(([a, b, ti, d]) => {
+      const right = a / total > .6;
+      return `<span class="${right ? 'r' : ''}" style="left:${(right ? tx(b) : tx(a)) / px * 100}%"><b>${ti}</b>${d}</span>`;
+    }).join('')}</div>`;
+  }
+  if (o.axis) html += `<div class="strip-ax">${o.axis.map(x => `<span>${x}</span>`).join('')}</div>`;
+  if (o.axisT) html += `<div class="strip-ax" style="position:relative;height:14px">${o.axisT.map((m, i) => { const x = tx(m) / px * 100;
+    return `<span style="position:absolute;left:${x}%;transform:translateX(${i === 0 ? '0' : i === o.axisT.length - 1 ? '-100%' : '-50%'})">${m}${i === o.axisT.length - 1 ? ' min' : ''}</span>`; }).join('')}</div>`;
+  return html;
+}
+function mini(key, axisMax, extra = {}) {
+  const s = S[key];
+  if (!s) return '';
+  if (s.strength) return `<span class="flex xs faint" style="gap:5px">${I('dumbbell', 16)}${s.name.replace('Strength ', '')} min</span>`;
+  const w = Math.max(8, s.min / axisMax * 100);
+  return strip(key, {h: STRIP_V === 'timeline' ? 10 : 16, mini: true, labels: false, w: w + '%', px: 92 * w / 100, cls: 'mini', ...extra});
+}
+
+function weekRows(stage, opts = {}) {
+  const w = opts.rows || W[stage].week;
+  const axisMax = Math.max(...w.map(r => (S[r[1]] && S[r[1]].min) || 0));
+  return `<div class="wk rows">${w.map(([d, k, st, note]) => {
+    const s = S[k];
+    let stt = '';
+    if (st === 'done') stt = `<span class="flex" style="justify-content:flex-end;gap:4px">${I('check', 14)}${note.replace('✓ ', '')}</span>`;
+    else if (st === 'today') stt = `<span class="flex w6" style="justify-content:flex-end;gap:6px;color:var(--ink)"><i class="dot"></i>Today</span>`;
+    else if (st === 'moved') stt = `<span class="chip">${I('move', 12)}Moved</span>`;
+    else if (st === 'missed') stt = `<span class="chip">Missed</span>`;
+    else if (st === 'rest') stt = '';
+    else stt = note ? note : (s && s.min ? s.min + ' min' : '');
+    const name = s ? (s.short || s.name) : 'Rest';
+    return `<div class="row${st === 'today' ? ' today' : ''}${st === 'rest' ? ' rest' : ''}" ${s ? `data-go="${st === 'today' ? 'session' : st === 'done' ? 'summary' : s.strength ? 'strength' : 'session'}"` : ''}>
+      <div class="day">${d}</div><div class="nm">${name}</div>
+      <div class="sp">${s ? mini(k, axisMax) : ''}</div>
+      <div class="stt">${stt}</div></div>`;
+  }).join('')}</div>`;
+}
+
+function grade(g) { return `<span class="grade" title="Evidence grade">${g}</span>`; }
+function gradeWords(g) { return {A:'Strong evidence', B:'Moderate evidence', C:'Early evidence'}[g]; }
+
+function ladderBar(stage, p) {
+  return `<div class="ladder">${STAGES.map(s => `<div class="st${s.n < stage ? ' done' : ''}">${s.n === stage ? `<i style="width:${Math.max(6, p * 100)}%"></i>` : ''}</div>`).join('')}</div>
+  <div class="ladder-l">${STAGES.map(s => `<span class="${s.n === stage ? 'on' : ''}">${s.name}</span>`).join('')}</div>`;
+}
+
+function weekBars(cfg, opts = {}) {
+  const vals = cfg.vals, max = Math.max(...vals) * 1.15;
+  const last = vals.length - 1, sel = cfg.part ? last - 1 : last;
+  const fmt = v => cfg.unit === 'h' ? (Math.floor(v) + ' h ' + String(Math.round((v % 1) * 60)).padStart(2, '0')) : v + ' min';
+  return `<div class="bars" style="height:${opts.h || 120}px">${vals.map((v, i) => {
+    const cls = i === sel ? 'on' : (cfg.part && i === last) || cfg.miss === i ? 'part' : '';
+    return `<div class="b ${cls}" style="height:${Math.max(3, v / max * 100)}%">${i === sel ? `<span class="cv"${i > vals.length - 3 ? ' style="left:auto;right:-4px;transform:none"' : ''}>${fmt(v)}</span>` : ''}${cfg.part && i === last ? `<span class="pv">${fmt(v)}</span>` : ''}</div>`;
+  }).join('')}</div><div class="bars-x">${cfg.x.map((x, i) => `<span class="${i === sel ? 'on' : ''}">${x}</span>`).join('')}</div>`;
+}
+
+/* Line with a shaded "your normal" band */
+function lineBand(pts, lo, hi, o = {}) {
+  const w = 350, h = o.h || 130, pad = 8;
+  const all = [...pts, ...lo, ...hi];
+  const mn = Math.min(...all), mx = Math.max(...all);
+  const X = i => pad + i / (pts.length - 1) * (w - pad * 2 - 30);
+  const Y = v => o.invert ? pad + (v - mn) / (mx - mn) * (h - pad * 2) : h - pad - (v - mn) / (mx - mn) * (h - pad * 2);
+  const band = lo.map((v, i) => `${X(i)},${Y(v)}`).join(' ') + ' ' + hi.map((v, i) => `${X(hi.length - 1 - i)},${Y(hi[hi.length - 1 - i])}`).join(' ');
+  const line = pts.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+  const lx = X(pts.length - 1), ly = Y(pts[pts.length - 1]);
+  const grid = [0.25, 0.5, 0.75].map(f => `<line x1="0" x2="${w}" y1="${pad + f * (h - pad * 2)}" y2="${pad + f * (h - pad * 2)}" stroke="var(--rule)" stroke-width="1"/>`).join('');
+  return `<svg width="100%" viewBox="0 0 ${w} ${h}" style="display:block;overflow:visible">${grid}
+    <polygon points="${band}" fill="var(--e1)" opacity=".38"/>
+    <path d="${line}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${pts.map((v, i) => i < pts.length - 1 ? `<circle cx="${X(i)}" cy="${Y(v)}" r="2.2" fill="var(--bg)" stroke="var(--ink)" stroke-width="1.4"/>` : '').join('')}
+    <circle cx="${lx}" cy="${ly}" r="5" fill="var(--acc)" stroke="var(--bg)" stroke-width="2.5"/>
+    ${o.tag ? `<g transform="translate(${lx + 8},${ly - 12})"><rect x="0" y="0" width="${o.tag.length * 6.6 + 12}" height="22" rx="6" fill="var(--ink)"/><text x="6" y="15" font-size="11.5" font-weight="600" fill="var(--bg)" font-family="Hanken Grotesk">${o.tag}</text></g>` : ''}
+  </svg>
+  ${o.x ? `<div class="strip-ax">${o.x.map(t => `<span>${t}</span>`).join('')}</div>` : ''}`;
+}
+
+/* Weather-style range bar */
+function rangeBar(lo, hi, likely, min, max, mark) {
+  const P = v => (v - min) / (max - min) * 100;
+  return `<div class="rng"><div class="tr"></div><div class="band" style="left:${P(lo)}%;width:${P(hi) - P(lo)}%"></div>
+    ${mark != null ? `<div class="mk" style="left:${P(mark)}%"></div>` : ''}<div class="pt" style="left:${P(likely)}%"></div></div>`;
+}
+
+/* Route map: hand-drawn park loop with privacy zones at start and end */
+function routeMap(o = {}) {
+  return `<div class="map"><svg viewBox="0 0 350 190" preserveAspectRatio="xMidYMid slice">
+    <defs><pattern id="hz" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="6" fill="var(--rule2)"/></pattern></defs>
+    <path d="M-10 150 C60 140 90 168 170 160 S300 128 360 140 L360 200 L-10 200z" fill="var(--well2)" opacity=".8"/>
+    <path d="M120 -10 C130 40 150 70 210 80 S320 70 360 40" fill="none" stroke="var(--rule2)" stroke-width="9" stroke-linecap="round" opacity=".7"/>
+    <path d="M20 30 L340 18 M30 110 L330 96 M90 0 L70 190 M260 0 L280 190" stroke="var(--rule)" stroke-width="5"/>
+    <ellipse cx="190" cy="104" rx="118" ry="58" fill="var(--bg)" opacity=".55"/>
+    <path d="M84 132 C70 104 86 64 132 54 C176 44 240 46 282 66 C316 82 312 128 276 142 C236 158 168 160 126 150 C112 147 98 144 92 138"
+      fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    ${o.strides ? `<path d="M212 151 C190 155 166 156 142 152" fill="none" stroke="var(--acc)" stroke-width="5" stroke-linecap="round" opacity=".9"/>` : ''}
+    ${[[110,58,'1'],[175,47,'2'],[238,51,'3'],[298,86,'4'],[266,146,'5'],[180,156,'6']].map(([x,y,t]) => `<g transform="translate(${x},${y})"><circle r="8" fill="var(--bg)" stroke="var(--ink)" stroke-width="1.4"/><text y="3.6" text-anchor="middle" font-size="9.5" font-weight="600" fill="var(--ink)" font-family="Hanken Grotesk">${t}</text></g>`).join('')}
+    <circle cx="74" cy="146" r="26" fill="url(#hz)" stroke="var(--rule2)" stroke-dasharray="3 3"/>
+    <text x="74" y="185" text-anchor="middle" font-size="10" fill="var(--ink2)" font-family="Hanken Grotesk">start/end hidden</text>
+  </svg></div>`;
+}
+
+function topnav(left = 'back', title = '', right = '') {
+  const l = left === 'back' ? `<button class="ib" data-go="back" aria-label="Back">${I('chevL', 24)}</button>`
+    : left === 'close' ? `<button class="ib" data-go="back" aria-label="Close">${I('x', 22)}</button>` : `<span style="width:40px"></span>`;
+  return `<div class="topnav">${l}<span class="h3" style="font-size:15px">${title}</span>${right || '<span style="width:40px"></span>'}</div>`;
+}
+
+function evidence(g, conf) {
+  return `<span class="gradechip">${grade(g)}${gradeWords(g)}${conf ? ' · ' + conf : ''}</span>`;
+}
+
+/* ───────── Screens: onboarding, Today, sheets, Plan ───────── */
+const SCREENS = {};
+const def = (id, meta, fn) => { SCREENS[id] = {id, ...meta, fn}; };
+const stg = n => STAGES[n - 1];
+const dateLine = (wx = true) => `<div><div class="h3">Wed 28 Oct</div>${wx ? `<div class="xs mute flex" style="gap:4px;margin-top:1px">${I('cloud', 14)}11° · dry until 18:00</div>` : ''}</div>`;
+
+/* ── Onboarding ── */
+def('o-welcome', {group:'Onboarding', title:'Welcome', notab:true, note:'The promise in one line, and the ladder drawn with the same strip the app uses for every run. Five real sessions, one per stage.'}, () => {
+  const rows = [['Start','rw15'],['Build','e30w'],['Develop','e40s'],['Perform','mp60'],['Compete','i800']];
+  return {glow:true, body:`
+    <div class="gap16"></div>
+    <div class="flex" style="gap:8px">${logo()}<span class="h3" style="font-size:18px;letter-spacing:-.02em">Steady</span></div>
+    <div class="gap32"></div>
+    <div class="hl" style="font-size:46px">One coach from your first run to your first marathon.</div>
+    <div class="gap16"></div>
+    <div class="lead">Plans in minutes and plain words. Every number explains itself. Works with just your phone.</div>
+    <div class="gap24"></div>
+    <div class="rows">${rows.map(([n, k], i) => `<div class="row" style="min-height:52px;padding:6px 0;gap:14px">
+      <span class="xs faint w6" style="width:14px">${i + 1}</span>
+      <div style="width:84px"><div class="sm w6">${n}</div><div class="xs faint">${S[k].min} min</div></div>
+      <div class="grow">${strip(k, {h:20, labels:false, w:Math.max(30, S[k].min / 60 * 100) + '%', px:2.1 * Math.max(30, S[k].min / 60 * 100)})}</div></div>`).join('')}</div>
+    <div class="xs faint" style="margin-top:10px">Each bar is one run, to scale. Darker means harder.</div>`,
+    foot:`<button class="btn" data-go="o-level">Get started</button><div class="gap8"></div><button class="btn2" data-go="today">I have an account</button>`};
+});
+
+def('o-level', {group:'Onboarding', title:'Where are you now?', notab:true, note:'Placement by self-report first; history (next screen) confirms it. The "coming back" path routes to Return to running.'}, () => ({body:`
+  ${topnav('back', '', '<span class="xs faint" style="width:40px;text-align:right">1 of 5</span>')}
+  <div class="h1" style="margin:8px 0 6px">Where are you with running right now?</div>
+  <div class="sm mute">We'll start you at the right step. You can change it later.</div>
+  <div class="gap20"></div>
+  ${[['I don’t run yet','Or it’s been years. We start with 1-minute runs.','1'],
+     ['I can run about 30 minutes','Not regularly yet.','2'],
+     ['I run 5K regularly','Ready for 10K or a half.','3', true],
+     ['I train for halves or marathons','I want a target time.','4'],
+     ['I race through the year','Several races, maybe a coach.','5']].map(([t, s, n, on]) =>
+    `<button class="choice${on ? ' on' : ''}"><span class="rad"></span><span class="grow"><div class="t">${t}</div><div class="s">${s}</div></span><span class="tag chip line">Stage ${n}</span></button>`).join('')}
+  <button class="choice"><span class="rad"></span><span class="grow"><div class="t">Coming back after injury or pregnancy</div><div class="s">A gentler return path, with pain check-ins.</div></span></button>`,
+  foot:`<button class="btn" data-go="o-import">Continue</button>`}));
+
+def('o-import', {group:'Onboarding', title:'Bring your history', notab:true, note:'Placement from imported history or one race time. Apple Health and Health Connect need no partner approval; Garmin history starts the day you connect (no backfill on the Starter tier). Strava is never a data source.'}, () => ({body:`
+  ${topnav('back', '', '<span class="xs faint" style="width:40px;text-align:right">2 of 5</span>')}
+  <div class="h1" style="margin:8px 0 6px">Bring your running history</div>
+  <div class="sm mute">We use your last 12 weeks to set your paces. Nothing is shared.</div>
+  <div class="gap20"></div>
+  <div class="rows">
+    <div class="row"><span class="ic">${I('heart', 18)}</span><div class="grow"><div class="t">Apple Health</div><div class="s goodc">Found 41 runs since 3 Aug</div></div><span class="chip good">${I('check', 13)}Connected</span></div>
+    <div class="row"><span class="ic">${I('watch', 18)}</span><div class="grow"><div class="t">Garmin</div><div class="s">History starts the day you connect</div></div><span class="link">Connect</span></div>
+    <div class="row"><span class="ic">${I('watch', 18)}</span><div class="grow"><div class="t">COROS</div><div class="s">Runs, and workouts to your watch</div></div><span class="link">Connect</span></div>
+    <div class="row"><span class="ic">${I('file', 18)}</span><div class="grow"><div class="t">Upload FIT or GPX files</div><div class="s">Any other watch</div></div><span class="link">Choose</span></div>
+  </div>
+  <div class="sec" style="margin-top:12px">
+    <div class="h3">Or tell us a recent race</div>
+    <div class="gap12"></div>
+    <div class="duo"><div class="field">5K ${I('chevD', 16, 'style="margin-left:auto;color:var(--ink3)"')}</div><div class="field num">24:51</div></div>
+    <div class="xs faint" style="margin-top:8px">Hackney Marshes parkrun, 12 Sep. A parkrun counts.</div>
+  </div>`,
+  foot:`<button class="btn" data-go="o-week">Continue</button>`}));
+
+def('o-week', {group:'Onboarding', title:'Your week and goal', notab:true, note:'Days, long-run day, goal and if-then plans ("If it’s raining, I’ll run at lunch"). If-then plans and plan-tied reminders are the engagement techniques with the best evidence.'}, () => ({body:`
+  ${topnav('back', '', '<span class="xs faint" style="width:40px;text-align:right">3 of 5</span>')}
+  <div class="h1" style="margin:8px 0 6px">Fit running around your week</div>
+  <div class="gap16"></div>
+  <div class="between"><div class="h3">Which days can you run?</div><span class="xs faint">5 days</span></div>
+  <div class="gap12"></div>
+  <div class="daypick">${['M','T','W','T','F','S','S'].map((d, i) => `<button class="${[0,1,2,4,6].includes(i) ? 'on' : ''}${i === 6 ? ' long' : ''}">${d}</button>`).join('')}</div>
+  <div class="xs faint" style="margin-top:8px">L = long run day. Strength fits on Thursday, 20 minutes.</div>
+  <div class="sec" style="margin-top:20px">
+    <div class="h3">Goal</div><div class="gap12"></div>
+    <div class="field">${I('target', 18, 'style="color:var(--ink2)"')}<span class="grow">Bath Half · Sun 15 Mar 2027</span>${I('chevR', 16, 'style="color:var(--ink3)"')}</div>
+    <div class="gap8"></div>
+    <div class="field">${I('clock', 18, 'style="color:var(--ink2)"')}<span class="grow">Under 2:00 <span class="ph">· optional</span></span>${I('chevR', 16, 'style="color:var(--ink3)"')}</div>
+  </div>
+  <div class="sec">
+    <div class="h3">Plan B, decided now</div>
+    <div class="sm mute" style="margin-top:2px">People who plan the "what if" keep going.</div>
+    <div class="gap12"></div>
+    <div class="rows">
+      <div class="row"><span class="ic">${I('cloud', 18)}</span><div class="grow"><div class="t">If it’s raining</div><div class="s">I’ll run at lunch instead</div></div>${I('chevR', 16, 'class="chev"')}</div>
+      <div class="row"><span class="ic">${I('clock', 18)}</span><div class="grow"><div class="t">If I only have 20 minutes</div><div class="s">Shorten it, don’t skip it</div></div>${I('chevR', 16, 'class="chev"')}</div>
+      <div class="row"><span class="ic">${I('bell', 18)}</span><div class="grow"><div class="t">Reminder the evening before</div><div class="s">20:00 · “Tomorrow: 40 min easy. Kit out tonight?”</div></div><span class="toggle on"></span></div>
+    </div>
+  </div>`,
+  foot:`<button class="btn" data-go="o-consent">Continue</button>`}));
+
+def('o-consent', {group:'Onboarding', title:'Health data consent', notab:true, note:'Heart rate, HRV, sleep and cycle data are UK GDPR special category data: explicit, separate opt-in for each, in plain words. Location has a privacy zone on by default. Copy needs privacy/legal review before launch.'}, () => ({body:`
+  ${topnav('back', '', '<span class="xs faint" style="width:40px;text-align:right">4 of 5</span>')}
+  <div class="h1" style="margin:8px 0 6px">Your health data, your choice</div>
+  <div class="sm mute">Heart rate, HRV, sleep and cycle data are sensitive. We only use what you switch on, and only to coach you. Never for ads.</div>
+  <div class="gap16"></div>
+  <div class="rows">
+    ${[['heart','Heart rate','Zones and the easy-pace check',true],
+       ['moon','Overnight HRV, sleep, resting heart rate','Can soften a hard day. Never overrules you.',true],
+       ['drop','Menstrual cycle log','Spot your own patterns. No phase-based rules.',false],
+       ['pin','Location','Record routes. Start and end hidden when you share (400 m).',true]].map(([ic, t, s, on]) =>
+      `<div class="row" style="align-items:flex-start;padding:14px 0"><span class="ic">${I(ic, 18)}</span><div class="grow"><div class="t">${t}</div><div class="s">${s}</div></div><span class="toggle${on ? ' on' : ''}" style="margin-top:3px"></span></div>`).join('')}
+  </div>
+  <div class="gap12"></div>
+  <div class="note"><span class="ni">${I('shield', 18)}</span><div class="nt sm">Change these any time in <b>You → Health data</b>. Download everything as FIT, GPX and CSV whenever you like.</div></div>`,
+  foot:`<button class="btn" data-go="o-ready">Agree and continue</button><div class="hint">Read how we use health data</div>`}));
+
+def('o-ready', {group:'Onboarding', title:'Placement', notab:true, note:'Placement result with the evidence behind it, then the first week as strips. Experienced runners skip straight to their stage.'}, () => ({glow:true, body:`
+  ${topnav('back', '', '<span class="xs faint" style="width:40px;text-align:right">5 of 5</span>')}
+  <div class="eyebrow">You start at</div>
+  <div class="gap8"></div>
+  <div class="flex" style="align-items:baseline;gap:12px"><span class="disp d2">3</span><span class="h1">Develop</span></div>
+  <div class="gap12"></div>
+  <div class="sm mute">From 41 runs: a 5K of <b class="w6" style="color:var(--ink)">24:51</b>, about <b class="w6" style="color:var(--ink)">3 h 30</b> a week, longest run <b class="w6" style="color:var(--ink)">12.4 km</b>. You’re ready for strides, tempo runs and a half-marathon block.</div>
+  <div class="gap20"></div>
+  ${ladderBar(3, .08)}
+  <div class="sec" style="margin-top:24px">
+    <div class="hd"><span class="eyebrow">Your first week · from Mon 2 Nov</span><span class="r">4 runs · 3 h 25</span></div>
+    ${weekRows(3, {rows:[['Mon','e35','plan'],['Tue','hills','plan'],['Wed',null,'rest'],['Thu','str20','plan'],['Fri','tempo','plan'],['Sat',null,'rest'],['Sun','long80','plan','13.1 km']]})}
+  </div>`,
+  foot:`<button class="btn" data-go="today">Start my plan</button>`}));
+
+function logo(size = 26) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 26 26"><rect width="26" height="26" rx="7" fill="var(--ink)"/>
+    <rect x="5" y="14" width="4" height="6" rx="1" fill="var(--e1)"/><rect x="10.5" y="11" width="4" height="9" rx="1" fill="var(--e2)"/><rect x="16" y="6" width="4" height="14" rx="1" fill="var(--e3)"/></svg>`;
+}
+
+/* ── Today ── */
+def('today', {group:'Today', title:'Today', tab:'today', note:'The run in plain words, drawn to scale, one Start. Why it changed sits right above Start. Move / Swap / Easier are one tap each: missing a run never breaks the plan.'}, (c) => {
+  const w = W[c.stage], h = w.hero, st = stg(c.stage);
+  const rec = w.recovery;
+  return {glow:true, body:`
+    <div class="between" style="height:56px">${dateLine()}<button class="pillbtn" data-go="ask">${I('ask', 17)}Ask</button></div>
+    <div class="gap12"></div>
+    <div class="between"><span class="eyebrow">${h.eyebrow}</span><button class="eyebrow flex" style="gap:2px" data-go="progress">Stage ${c.stage} · ${st.name}${I('chevR', 13)}</button></div>
+    <div class="gap8"></div>
+    <div class="h1">${h.title}</div>
+    <div class="flex" style="align-items:baseline;gap:8px;margin-top:4px"><span class="disp d2">${h.big}</span><span class="unit" style="font-size:24px">${h.unit}</span></div>
+    <div class="sm mute flex" style="gap:6px;margin-top:6px">${I('talk', 16, 'style="color:var(--ink3)"')}<span><b class="w6" style="color:var(--ink)">${h.talk}</b>${h.pace ? ' · ' + h.pace : ''}</span></div>
+    <div class="gap24"></div>
+    ${strip(w.today)}
+    <div class="gap12"></div>
+    <div class="note"><span class="ni">${I(w.why.moved ? 'move' : 'info', 18)}</span><div class="nt">${w.why.text}${w.why.moved ? ` <button class="link" data-go="changes" style="margin-left:2px">What changed${I('chevR', 14)}</button>` : ''}</div></div>
+    ${rec ? `<div class="gap12"></div><div class="flex sm" style="gap:12px">
+      <span class="mute" style="white-space:nowrap">HRV <b class="w6" style="color:var(--ink)">${rec.hrv}</b> ms</span>
+      <div class="grow">${rangeBar(rec.lo, rec.hi, rec.hrv, rec.lo - 10, rec.hi + 10)}</div>
+      <span class="xs faint" style="white-space:nowrap">normal ${rec.lo}–${rec.hi}</span></div>` : ''}
+    <div class="gap16"></div>
+    <button class="btn split" data-go="live"><span class="flex" style="gap:10px">${I('play', 20)}Start run</span><span class="sub">${c.stage === 1 ? 'Voice cues on' : 'Cues · watch ready'}</span></button>
+    <div class="gap8"></div>
+    <div class="tools"><button data-go="move">${I('move', 16)}Move</button><button data-go="move">${I('swap', 16)}Swap</button><button data-go="move">${I('easier', 16)}Easier</button><button data-go="session">${I('watch', 16)}Watch</button></div>
+    <div class="sec" style="margin-top:24px">
+      <div class="hd"><span class="eyebrow">This week</span><span class="r">${w.weekSum}</span></div>
+      ${weekRows(c.stage)}
+    </div>
+    <div class="sec">
+      <div class="h2" style="font-weight:500;line-height:1.3">${w.insight.text}</div>
+      ${w.insight.sub ? `<div class="sm mute" style="margin-top:6px">${w.insight.sub}</div>` : ''}
+      <div class="gap12"></div><button class="link" data-go="${w.insight.link === 'metric' ? 'explain' : w.insight.link}">Explain this${I('chevR', 14)}</button>
+    </div>
+    <div class="sec" data-go="progress">
+      <div class="hd" style="margin-bottom:10px"><span class="eyebrow">${c.stage < 5 && c.stage !== 4 ? 'Next: Stage ' + (c.stage + 1) + ' · ' + stg(c.stage + 1).name : 'Stage ' + c.stage + ' · ' + st.name}</span><span class="r">${w.ladder.checks.filter(x => x[2] >= 1).length} of ${w.ladder.checks.length} done</span></div>
+      ${ladderBar(c.stage, w.ladder.p)}
+    </div>`, tab:'today'};
+});
+
+def('session', {group:'Today', title:'Session detail', notab:true, note:'Every step with duration, talk-test effort and (from Stage 2) pace. The spike guard is checked before the run, and the workout is sent to the watch (Apple WorkoutKit, Garmin Training API, COROS).'}, (c) => {
+  const w = W[c.stage], s = S[w.today], h = w.hero;
+  const mm = m => { const t = Math.round(m * 60); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+  const eq = (x, y) => x && y && x[0] === y[0] && Math.abs(x[1] - y[1]) < 1e-6;
+  const merged = [];
+  for (let i = 0; i < s.blocks.length;) {   // collapse a,b,a,b… into one "n ×" step
+    const a = s.blocks[i], b = s.blocks[i + 1]; let n = 0, j = i;
+    while (eq(s.blocks[j], a) && eq(s.blocks[j + 1], b)) { n++; j += 2; }
+    if (n >= 2) { merged.push({rep:n, a, b}); i = j; } else { merged.push({one:a}); i++; }
+  }
+  const paces = {2:['', '6:50–7:20 /km'], 3:['', '6:05–6:35 /km', '5:25–5:45 /km', 'fast and relaxed, not a sprint'], 4:['', '5:30–5:55 /km', '4:58 /km', '4:05 /km'], 5:['', '4:50–5:20 /km', '4:15 /km', '3:26 /km · 318–326 W']};
+  const pz = (e) => (paces[c.stage] || [])[e] || '';
+  const word = e => ['walk', 'easy', 'steady', 'fast'][e];
+  const stepRow = (x, i) => x.rep
+    ? `<div class="st"><span class="i">0${i + 1}</span><span><span class="sw" style="background:var(--e${x.a[0]})"></span>${x.rep} × ${word(x.a[0])} ${mm(x.a[1])}, ${word(x.b[0])} ${mm(x.b[1])}<span class="w">${EFFORT[x.a[0]].talk}${pz(x.a[0]) ? ' · ' + pz(x.a[0]) : ''}</span></span><span class="d">${mm(x.rep * (x.a[1] + x.b[1]))}</span></div>`
+    : `<div class="st"><span class="i">0${i + 1}</span><span><span class="sw" style="background:var(--e${x.one[0]})"></span>${x.one[0] === 0 ? 'Walk' : EFFORT[x.one[0]].k + ' run'}<span class="w">${EFFORT[x.one[0]].talk}${pz(x.one[0]) ? ' · ' + pz(x.one[0]) : ''}</span></span><span class="d">${mm(x.one[1])}</span></div>`;
+  const spike = {1:null, 2:['Today about 4.2 km','Longest in the last 30 days: 5.4 km'], 3:['Today about 6.5 km','Longest in the last 30 days: 12.4 km'], 4:['Today about 12.4 km','Longest in the last 30 days: 30.0 km'], 5:['Today about 11.6 km','Longest in the last 30 days: 28.0 km']}[c.stage];
+  return {body:`
+    ${topnav('back', 'Wed 28 Oct', `<button class="ib" aria-label="More">${I('more', 22)}</button>`)}
+    <div class="eyebrow">Session · ${s.min} min</div>
+    <div class="gap8"></div>
+    <div class="h1">${h.title}</div>
+    <div class="gap24"></div>
+    ${strip(w.today, {axisT:[0, Math.round(s.min / 4), Math.round(s.min / 2), Math.round(s.min * 3 / 4), s.min]})}
+    <div class="sec" style="margin-top:16px"><div class="steps">${merged.map(stepRow).join('')}</div></div>
+    ${spike ? `<div class="sec"><div class="flex" style="gap:12px;align-items:flex-start"><span class="ic" style="width:34px;height:34px;border-radius:10px;background:var(--goodT);color:var(--good);display:flex;align-items:center;justify-content:center;flex:none">${I('shield', 18)}</span>
+      <div class="grow"><div class="t w6">Spike guard: fine</div><div class="sm mute">${spike[0]}. ${spike[1]}. A single run more than 10% past that raises injury risk; today is well inside.</div><div class="gap8"></div>${evidence('B')}</div></div></div>` : ''}
+    <div class="sec"><div class="hd"><span class="eyebrow">Voice cues</span></div>
+      <div class="rows">
+        <div class="row" style="min-height:46px"><div class="grow t">${c.stage === 1 ? '“Run now” / “Walk now”' : 'Each block change, with the target'}</div><span class="toggle on"></span></div>
+        <div class="row" style="min-height:46px"><div class="grow t">${c.stage === 1 ? 'Halfway, and the last run' : 'Every kilometre: time and pace'}</div><span class="toggle${c.stage === 1 ? ' on' : ' on'}"></span></div>
+        <div class="row" style="min-height:46px"><div class="grow t">Spike guard warning</div><span class="xs faint">Always on</span></div>
+      </div></div>
+    <div class="sec"><div class="hd"><span class="eyebrow">On your wrist</span></div>
+      <div class="rows"><div class="row"><span class="ic">${I('watch', 18)}</span><div class="grow"><div class="t">Apple Watch Ultra 2</div><div class="s">In the Workout app as “Steady · ${s.name}”</div></div><span class="chip good">${I('check', 13)}Sent 06:12</span></div></div></div>`,
+    foot:`<button class="btn" data-go="live">${I('play', 20)}Start run</button>`};
+});
+
+/* ── Sheets over Today ── */
+def('move', {group:'Today', title:'Can’t run today? (sheet)', base:'today', notab:true, note:'Move, swap, shorten or skip: one tap, consequences stated before you choose. We never add missed minutes back.'}, (c) => ({sheet:`
+  <div class="h2">Can’t run today?</div>
+  <div class="sm mute" style="margin:4px 0 16px">No problem. Here’s what each choice does to your week.</div>
+  ${[['Move to tomorrow','Thursday’s strength moves to Friday. Nothing else changes.',true],
+     ['Make it shorter','Easy 20 instead of 40. Still counts for the week.'],
+     ['Swap with Sunday’s long run','Long run on Thursday, easy on Sunday. Two easy days stay between hard ones.'],
+     ['Skip it','The week still works. We don’t add missed minutes back.']].map(([t, s, on]) =>
+    `<button class="choice${on ? ' on' : ''}"><span class="rad"></span><span class="grow"><div class="t">${t}</div><div class="s">${s}</div></span></button>`).join('')}
+  <div class="gap8"></div>
+  <button class="btn" data-go="back">Move to Thursday</button>`}));
+
+def('ask', {group:'Ask', title:'Ask: a cold (sheet)', base:'today', notab:true, note:'Free questions about your running. Answers use only data Steady recorded or you granted (never Strava API data). Any plan change is proposed, never applied, until you approve it.'}, (c) => ({sheet:`
+  <div class="between"><div class="h2">Ask Steady</div><button class="ib well" data-go="back" aria-label="Close" style="width:32px;height:32px">${I('x', 16)}</button></div>
+  <div class="gap16"></div>
+  <div class="bubble">I’ve got a cold. What should I change this week?</div>
+  <div class="answer">
+    <p>Sorry you’re ill. A common rule of thumb: if it’s only <b>above the neck</b> (runny nose, sore throat) and you feel OK, easy running is usually fine. If it’s in your <b>chest</b>, or you have a fever or aches, rest until it clears.</p>
+    <p>If you’d like, here’s an easier week:</p>
+  </div>
+  <div class="rows" style="border:1px solid var(--rule);border-radius:14px;padding:2px 14px">
+    <div class="row"><span class="day xs w6 mute" style="width:30px">Fri</span><div class="grow sm"><s>Tempo 3 × 8 min</s> → <b class="w6">Easy 30</b></div></div>
+    <div class="row"><span class="day xs w6 mute" style="width:30px">Sun</span><div class="grow sm"><s>Long 80</s> → <b class="w6">Easy 50</b></div></div>
+  </div>
+  <div class="gap12"></div>
+  <div class="duo"><button class="btn" style="height:48px;font-size:15px" data-go="back">Make these 2 changes</button><button class="btn2" style="height:48px" data-go="back">Not now</button></div>
+  <div class="xs faint" style="margin-top:10px">Based on your plan and runs recorded in Steady. General guidance, not medical advice.</div>
+  <div class="gap16"></div>
+  <div class="tagset"><button>Why is today easy?</button><button>Can I race a 10K on Sunday?</button></div>
+  <div class="gap12"></div>
+  <div class="field"><span class="ph grow">Ask about your running…</span>${I('arrowUp', 18, 'style="color:var(--ink3)"')}</div>`}));
+
+def('ask-pain', {group:'Ask', title:'Ask: pain (fixed answer)', base:'today', notab:true, note:'Pain and injury questions never go to free generation: a fixed, physio-reviewed answer, using the runner’s own niggle log. No diagnosis (software that diagnoses can count as a medical device under MHRA rules).'}, (c) => ({sheet:`
+  <div class="between"><div class="h2">Ask Steady</div><button class="ib well" data-go="back" aria-label="Close" style="width:32px;height:32px">${I('x', 16)}</button></div>
+  <div class="gap16"></div>
+  <div class="bubble">Is my knee pain runner’s knee?</div>
+  <div class="gap12"></div>
+  <span class="chip line">${I('shield', 13)}Reviewed answer · written with physiotherapists</span>
+  <div class="answer">
+    <p>I can’t tell what’s causing knee pain, and I won’t guess. What I can see: you logged <b>4/10</b> after Wednesday’s run and <b>5/10</b> this morning.</p>
+    <p><b>See a physio if:</b></p>
+  </div>
+  <div class="rows">${['Pain goes above 5/10 while running','It changes how you run','There’s swelling, or it’s worse each morning','It isn’t better within a week'].map(t => `<div class="row" style="min-height:42px;padding:8px 0"><span style="color:var(--warn)">${I('alert', 16)}</span><div class="grow sm">${t}</div></div>`).join('')}</div>
+  <div class="gap12"></div>
+  <div class="duo"><button class="btn" style="height:48px;font-size:15px">Find a physio</button><button class="btn2" style="height:48px" data-go="niggle">My knee plan</button></div>`}));
+
+def('lapse', {group:'Today', title:'Back after a break', tab:'today', stage:2, note:'After 2 missed weeks: a gentle restart week instead of a broken streak. Streaks count weeks, never days.'}, (c) => ({glow:true, body:`
+  <div class="between" style="height:56px">${dateLine()}<button class="pillbtn" data-go="ask">${I('ask', 17)}Ask</button></div>
+  <div class="gap12"></div>
+  <div class="eyebrow">Welcome back</div>
+  <div class="gap8"></div>
+  <div class="hl" style="font-size:36px">It’s been 15 days. Let’s restart gently.</div>
+  <div class="gap12"></div>
+  <div class="sm mute">Nothing to make up. This week is three easy 20-minute runs, then your plan carries on from week 5.</div>
+  <div class="gap24"></div>
+  <div class="flex" style="align-items:baseline;gap:8px"><span class="disp d3">20</span><span class="unit" style="font-size:20px">min</span><span class="sm mute" style="margin-left:6px">easy · full sentences</span></div>
+  <div class="gap16"></div>
+  ${strip('restart', {w:'100%'})}
+  <div class="gap16"></div>
+  <button class="btn" data-go="live">${I('play', 20)}Start run</button>
+  <div class="sec" style="margin-top:24px">
+    <div class="hd"><span class="eyebrow">Restart week</span><span class="r">0 of 3</span></div>
+    <div class="wk rows">${[['Wed','Easy 20','today'],['Fri','Easy 20',''],['Sun','Easy 20','']].map(([d, n, st]) => `<div class="row${st ? ' today' : ''}"><div class="day">${d}</div><div class="nm">${n}</div><div class="sp">${mini('restart', 40)}</div><div class="stt">${st ? '<span class="flex w6" style="justify-content:flex-end;gap:6px;color:var(--ink)"><i class="dot"></i>Today</span>' : '20 min'}</div></div>`).join('')}</div>
+  </div>
+  <div class="sec"><div class="flex" style="gap:12px"><span class="ic" style="width:34px;height:34px;border-radius:10px;background:var(--well);display:flex;align-items:center;justify-content:center">${I('repeat', 18)}</span>
+    <div class="grow"><div class="t w6">Your streak is paused, not lost</div><div class="sm mute">4 weeks. It carries on when you run this week.</div></div></div></div>`, tab:'today'}));
+
+/* ── Plan ── */
+const PHASES = {
+  1:[['Run/walk',6],['Longer runs',4]], 2:[['Every week',6],['First 5K',2]],
+  3:[['Base',6],['Build',7],['Peak',5],['Taper',2]], 4:[['Base',4],['Build',6],['Peak',6],['Taper',2]],
+  5:[['Base',8],['Brighton Half',2],['Marathon build',8],['Taper',2]]};
+const PH_AT = {1:3, 2:5, 3:3, 4:13, 5:6};
+function phaseBar(stage) {
+  const ph = PHASES[stage], tot = sum(ph.map(p => p[1])), at = PH_AT[stage];
+  let t = 0;
+  return `<div style="position:relative;padding-top:26px">
+    <div class="flex" style="gap:3px">${ph.map(([n, wks]) => { const s0 = t; t += wks;
+      const done = Math.min(1, Math.max(0, (at - s0) / wks));
+      return `<div style="flex:${wks};"><div class="bar" style="height:8px;border-radius:2px"><i style="width:${done * 100}%;border-radius:0"></i></div><div class="xs ${at > s0 && at <= t ? 'w6' : 'faint'}" style="margin-top:7px;white-space:nowrap">${n}</div></div>`; }).join('')}</div>
+    <div class="now" style="position:absolute;top:0;left:calc(${(at - .5) / tot * 100}% );transform:translateX(-50%)"><span class="chip ink" style="height:20px">Week ${at}</span></div></div>`;
+}
+def('plan', {group:'Plan', title:'Plan', tab:'plan', note:'The block as phases, then the week as a timetable of strips on one time axis: the long run is visibly the longest. Spike guard is built into plan generation. Taper is automatic.'}, (c) => {
+  const w = W[c.stage];
+  const spike = {1:'Friday’s run/walk is the same length as today. Run minutes rise by 30 s at most.', 2:'Saturday’s 40 min (about 5.9 km) is 9% longer than your longest run this month (5.4 km). Under 10%, so it stays.', 3:'Sunday’s 13.1 km is 6% longer than your longest run in the last 30 days (12.4 km). Under 10%, fine.', 4:'Sunday’s 32 km is 7% longer than your longest run in the last 30 days (30 km). Under 10%, fine.', 5:'Sunday’s 26 km is shorter than your longest run in the last 30 days (28 km).'}[c.stage];
+  return {body:`
+    <div class="page-t">Plan</div>
+    <div class="sm mute">${w.goalLine}</div>
+    <div class="gap16"></div>
+    ${phaseBar(c.stage)}
+    <div class="sec" style="margin-top:22px">
+      <div class="between" style="margin-bottom:10px"><button class="ib well" style="width:32px;height:32px" aria-label="Previous week">${I('chevL', 16)}</button>
+        <div style="text-align:center"><div class="h3">This week</div><div class="xs faint">26 Oct – 1 Nov · ${w.weekSum}</div></div>
+        <button class="ib well" style="width:32px;height:32px" aria-label="Next week">${I('chevR', 16)}</button></div>
+      ${weekRows(c.stage)}
+      <div class="gap12"></div>
+      <div class="note"><span class="ni" style="color:var(--good)">${I('shield', 18)}</span><div class="nt sm">${spike}</div></div>
+    </div>
+    ${c.stage >= 2 ? `<div class="sec" data-go="changes">
+      <div class="hd"><span class="eyebrow">What changed</span><button class="link">All changes${I('chevR', 14)}</button></div>
+      ${changeEntry(changesFor(c.stage)[0], true)}
+    </div>` : ''}
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Coming up</span></div>
+      <div class="rows">
+        ${c.stage >= 3 ? `<div class="row" data-go="${c.stage >= 4 ? 'race' : 'plan'}"><span class="ic">${I('easier', 18)}</span><div class="grow"><div class="t">Taper starts by itself</div><div class="s">${c.stage === 4 ? 'Sun 22 Nov: volume down 45% over 2 weeks, same intensity' : c.stage === 5 ? 'Brighton Half: 10 days, light. London: 2 weeks' : '2 weeks before Bath: volume down about 45%, same intensity'}</div></div>${grade('A')}</div>` : ''}
+        <div class="row" data-go="strength"><span class="ic">${I('dumbbell', 18)}</span><div class="grow"><div class="t">Strength, twice a week</div><div class="s">${c.stage <= 2 ? 'Bodyweight · 15 min' : 'Heavy lifts and hops · 20 min'}</div></div>${I('chevR', 16, 'class="chev"')}</div>
+        <div class="row" data-go="tests"><span class="ic">${I('target', 18)}</span><div class="grow"><div class="t">Self-tests</div><div class="s">${c.stage >= 3 ? 'Critical-speed test suggested in week 5' : 'Talk-test calibration run'}</div></div>${I('chevR', 16, 'class="chev"')}</div>
+      </div>
+    </div>`, tab:'plan'};
+});
+
+const CH4 = {when:'Mon 26 Oct, 06:05', who:'Plan', items:[['Mon','Easy 60','Easy 50'],['Tue','Intervals 6 × 1 km','Intervals 5 × 1 km']],
+  because:[['Sleep','2 nights under 6 h'],['HRV','41 ms, below your normal 46–60'],['RPE','Sunday\u2019s long run felt 8/10'],['You','Said you felt \u201crough\u201d']], open:true};
+const CH5 = {when:'Tue 27 Oct, 19:40', who:'Coach Sam', items:[['Wed','Easy 45','6 × 800 m'],['Thu','6 × 800 m','Easy 45']],
+  because:[['Coach','\u201cTrack\u2019s free Wednesday, Thursday stays easy.\u201d']], open:true};
+const CH2 = {when:'Today, 06:10', who:'Plan', items:[['Sat','Long 45','Long 40']],
+  because:[['Spike guard','45 min would be about 19% past your longest run this month']], open:true};
+function changesFor(stage) {
+  const head = {2:CH2, 3:CHANGES[0], 4:CH4, 5:CH5}[stage];
+  return head ? [head, ...CHANGES.slice(1)] : CHANGES.slice(1);
+}
+function changeEntry(ch, compact) {
+  return `<div style="padding:${compact ? '0' : '16px 0'}">
+    <div class="between"><span class="xs faint">${ch.when} · by ${ch.who}</span>${ch.open ? `<span class="flex" style="gap:14px"><button class="link">${I('undo', 14)}Undo</button></span>` : ''}</div>
+    <div class="gap8"></div>
+    ${ch.items.map(([d, a, b]) => `<div class="flex" style="gap:10px;padding:3px 0"><span class="xs w6 mute" style="width:30px">${d}</span><span class="sm"><s>${a}</s> <span class="faint">→</span> <b class="w6">${b}</b></span></div>`).join('')}
+    <div class="gap8"></div>
+    <div class="flex" style="flex-wrap:wrap;gap:6px">${ch.because.map(([k, t]) => `<span class="chip"><b class="w6" style="color:var(--ink)">${k}</b>${t}</span>`).join('')}</div>
+  </div>`;
+}
+def('changes', {group:'Plan', title:'What changed', notab:true, note:'Every adaptation is listed with its reasons and can be undone. Inputs: missed sessions, RPE, niggles, HRV/sleep (soft), heat forecast, illness, coach edits. Nothing is rebuilt silently.'}, (c) => ({body:`
+  ${topnav('back', 'What changed')}
+  <div class="h1" style="margin:4px 0 6px">Every change, and why</div>
+  <div class="sm mute">Your plan adapts to how runs feel, missed days, sleep and the weather. You can undo any change.</div>
+  <div class="gap8"></div>
+  ${changesFor(c.stage).map((ch, i) => `<div style="border-top:${i ? '1px solid var(--rule)' : '0'}">${changeEntry({...ch, open:i === 0 || ch.open && i === 0})}</div>`).join('')}
+  <div class="sec"><div class="xs faint">HRV and sleep can soften a hard day. They never cancel one on their own, and you always have the last word.</div></div>`}));
+
+def('strength', {group:'Plan', title:'Strength session', notab:true, note:'Strength on the same calendar as runs, progressing by stage: bodyweight at 1–2, heavy lifts and plyometrics from 3. Combined heavy + plyometric work has the best evidence for running economy.'}, (c) => {
+  const heavy = c.stage >= 3;
+  const ex = heavy ? [['Goblet squat','3 × 6','Heavy: last 2 reps hard'],['Romanian deadlift','3 × 6','Hinge, flat back'],['Step-up','3 × 8 each leg','Knee over toes is fine'],['Single-leg calf raise','3 × 10 each','Slow down, 3 s'],['Pogo hops','3 × 20 s','Quick, springy contacts'],['Bounds','3 × 6','Long and tall']]
+    : [['Squat','2 × 12','Sit back, chest up'],['Split squat','2 × 8 each leg','Hold a wall if you need'],['Glute bridge','2 × 12','Squeeze at the top'],['Calf raise','2 × 15','Both legs, slow'],['Plank','2 × 30 s','Straight line'],['Side plank','2 × 20 s each','Hips high']];
+  return {body:`
+    ${topnav('back', 'Thu 29 Oct')}
+    <div class="eyebrow">Strength · ${heavy ? '20' : '15'} min · ${heavy ? 'gym or home with weights' : 'no equipment'}</div>
+    <div class="gap8"></div><div class="h1">${heavy ? 'Heavy legs and hops' : 'Bodyweight basics'}</div>
+    <div class="gap16"></div>
+    <div class="steps">${ex.map(([n, r, t], i) => `<div class="st"><span class="i">0${i + 1}</span><span>${n}<span class="w">${t}</span></span><span class="d">${r}</span></div>`).join('')}</div>
+    <div class="sec" style="margin-top:12px"><div class="flex" style="gap:12px;align-items:flex-start"><span class="ni" style="color:var(--ink2)">${I('book', 18)}</span><div class="grow sm mute">Strength and plyometric training make running cheaper for your body, and the two combined work best. ${evidence('B')}</div></div></div>`,
+    foot:`<button class="btn">${I('play', 20)}Start session</button>`};
+});
+
+/* ───────── Screens: the run, after the run, history ───────── */
+const LIVE = {
+  2:{at:14.3, clock:'14:18', label:'Easy run · full sentences', bigLabel:'Elapsed', big:'14:18', sub:'12:42 left in this block, then walk',
+     k:[['2.05','km','Distance'],['7:01','/km','Pace · avg 7:04'],['141','bpm','Heart · easy']], cue:'“Keep it chatty. You’re doing it right.”'},
+  3:{at:17.7, clock:'17:42', label:'Easy run · full sentences', bigLabel:'Elapsed', big:'17:42', sub:'14:18 of easy left, then 6 strides',
+     k:[['2.91','km','Distance'],['6:04','/km','Pace · avg 6:06'],['138','bpm','Heart · easy']], cue:'“Halfway through the easy part. Keep it chatty.”'},
+  4:{at:27.5, clock:'27:30', label:'Rep 2 of 3 · marathon pace', bigLabel:'Current pace', big:'4:57', bigU:'/km', chip:['good','On target · 4:58'],
+     k:[['7:30','left','This rep'],['5.34','km','Distance'],['156','bpm','Heart · steady']], cue:'“Rep two. Settle in. Short phrases.”'},
+  5:{at:33.45, clock:'33:27', label:'Rep 5 of 6 · 800 m', bigLabel:'Left in this rep', big:'1:18', chip:['good','3:25 /km · 322 W · on target'],
+     k:[['33:27','','Elapsed'],['7.14','km','Distance'],['322','W','Power']], cue:'“Rep five. Relax your shoulders.”'},
+};
+function liveControls() {
+  return `<div class="ctrl"><button class="side">${I('lap', 22)}Lap</button>
+    <button class="main" data-go="feel" aria-label="Pause">${I('pause', 34)}</button>
+    <button class="side">${I('arrowR', 22)}Skip</button></div>
+    <div class="xs faint" style="text-align:center;margin-top:10px">Hold pause to finish</div>`;
+}
+function kpis(rows, faint = []) {
+  return `<div class="kpis">${rows.map(([v, u, l], i) => `<div><div class="k" style="${faint.includes(i) ? 'color:var(--ink3)' : ''}">${v}${u ? `<small>${u}</small>` : ''}</div><div class="l">${l}</div></div>`).join('')}</div>`;
+}
+
+def('live', {group:'Run', title:'Live run', notab:true, time:'7:29', note:'One number you need now, big enough to read mid-stride; the strip fills as you go, with the now-line. Beginners see Run / Walk and a countdown, never pace. Voice cues carry the session.'}, (c) => {
+  if (c.stage === 1) return {time:'7:31', body:`
+    <div class="live-top"><span class="rec"><i></i>Recording</span><span class="chip">Run 3 of 6</span></div>
+    <div class="gap24"></div>
+    <div class="disp" style="font-size:72px;color:var(--accInk)">Run</div>
+    <div class="disp d1" data-clock="down" data-t="42">0:42</div>
+    <div class="lead" style="margin-top:10px">then walk 1½ min</div>
+    <div class="gap32"></div>
+    ${strip('rw15', {at:11.8, atLabel:'11:48'})}
+    <div class="gap16"></div>
+    ${kpis([['11:48','','Elapsed'],['3:48','min','Running so far'],['13:12','','To go']])}
+    <div class="gap20"></div>
+    <div class="cue">${I('volume', 18)}<q>Run now. Slow enough to chat.</q></div>
+`, foot:liveControls()};
+  const L = LIVE[c.stage], w = W[c.stage];
+  return {time:'7:29', body:`
+    <div class="live-top"><span class="rec"><i></i>Recording</span><span class="flex" style="gap:8px"><span class="chip">${I('gps', 13)}GPS good</span><span class="chip">${I('watch', 13)}Watch</span></span></div>
+    <div class="gap16"></div>
+    <div class="eyebrow">${L.label}</div>
+    <div class="gap12"></div>
+    <div class="flex" style="align-items:baseline;gap:8px"><span class="disp d1" ${L.bigLabel === 'Elapsed' ? `data-clock="up" data-t="${Math.round(c.stage === 2 ? 858 : 1062)}"` : ''}>${L.big}</span>${L.bigU ? `<span class="unit" style="font-size:24px">${L.bigU}</span>` : ''}</div>
+    <div class="sm mute" style="margin-top:10px">${L.chip ? `<span class="chip ${L.chip[0]}">${I('check', 13)}${L.chip[1]}</span>` : L.sub}</div>
+    <div class="gap24"></div>
+    ${kpis(L.k)}
+    <div class="gap32"></div>
+    ${strip(w.today, {at:L.at, atLabel:L.clock})}
+    <div class="gap12"></div>
+    <div class="cue">${I('volume', 18)}<q>${L.cue.replace(/[“”]/g, '')}</q></div>`, foot:liveControls()};
+});
+
+def('live-spike', {group:'Run', title:'Live: spike guard', notab:true, note:'The strongest new injury evidence (5,205 runners): one run more than 10% past your longest in 30 days raises risk; week-to-week increases didn’t. Spoken and shown, never blocking.'}, (c) => {
+  const lo = c.stage <= 2;
+  const d = lo ? {at:'6.0', km:'5.4', pct:'11', t:'41:52', p:'6:58', home:'0.8', time:'8:48'} : {at:'13.7', km:'12.4', pct:'10', t:'1:24:10', p:'6:08', home:'1.2', time:'9:46'};
+  return {time:d.time, body:`
+    <div class="live-top"><span class="rec"><i></i>${lo ? 'Long run' : 'Sunday long run'}</span><span class="chip">${I('volume', 13)}Spoken aloud</span></div>
+    <div class="gap12"></div>
+    <div class="banner">
+      <div class="flex" style="gap:8px;color:var(--warn)">${I('alert', 18)}<span class="eyebrow" style="color:var(--warn)">Spike guard</span></div>
+      <div class="gap8"></div>
+      <div class="bt">You’re at ${d.at} km, ${d.pct}% past your longest run this month (${d.km} km).</div>
+      <div class="bs">One big jump in a single run raises injury risk more than a busy week does. This is a good place to turn for home: ${d.home} km from here.</div>
+      <div class="gap12"></div>
+      <div class="duo"><button class="btn" style="height:46px;font-size:15px">${I('pin', 17)}Route home</button><button class="btn2" style="height:46px;font-size:15px">Keep going</button></div>
+    </div>
+    <div class="gap20"></div>
+    <div class="eyebrow">Elapsed</div><div class="gap8"></div>
+    <div class="disp d2">${d.t}</div>
+    <div class="gap20"></div>
+    ${kpis([[d.at, 'km', 'Distance'], [d.p, '/km', 'Pace'], ['143', 'bpm', 'Heart · easy']])}
+    <div class="gap24"></div>
+    ${strip(lo ? 'long40' : 'long80', {at:lo ? 40 : 80, atLabel:'Plan done', labels:false})}
+    <div class="xs faint" style="margin-top:10px">Planned run finished ${lo ? '2' : '4'} minutes ago.</div>`, foot:liveControls()};
+});
+
+def('live-low', {group:'Run', title:'Live: low-confidence data', notab:true, stage:3, note:'Honest numbers: wrist heart rate lags a chest strap by 10–20 s in pace changes, and GPS drops under trees. The app says so, switches the source, and marks the numbers.'}, (c) => ({time:'7:52', body:`
+  <div class="live-top"><span class="rec"><i></i>Recording</span><span class="chip">Stride 4 of 6</span></div>
+  <div class="gap12"></div>
+  <div class="rows" style="border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)">
+    <div class="row" style="min-height:0;padding:10px 0;align-items:flex-start"><span style="color:var(--warn);margin-top:1px">${I('heart', 17)}</span><div class="grow sm"><b class="w6">Heart rate: low confidence.</b> <span class="mute">Wrist sensors lag in short fast bursts. Using effort for the strides.</span></div></div>
+    <div class="row" style="min-height:0;padding:10px 0;align-items:flex-start"><span style="color:var(--warn);margin-top:1px">${I('gps', 17)}</span><div class="grow sm"><b class="w6">GPS weak under trees.</b> <span class="mute">Pace from your steps until it’s back.</span></div></div>
+  </div>
+  <div class="gap20"></div>
+  <div class="eyebrow">Stride · fast and relaxed</div><div class="gap12"></div>
+  <div class="flex" style="align-items:baseline;gap:8px"><span class="disp d1">0:12</span><span class="unit" style="font-size:24px">left</span></div>
+  <div class="sm mute" style="margin-top:10px">then walk back 1:00</div>
+  <div class="gap24"></div>
+  ${kpis([['36:08', '', 'Elapsed'], ['≈5.93', 'km', 'Distance · from steps'], ['~150', 'bpm', 'Heart · low confidence']], [2])}
+  <div class="gap32"></div>
+  ${strip('e40s', {at:36.13, atLabel:'36:08'})}`, foot:liveControls()}));
+
+def('feel', {group:'Run', title:'How did it feel?', notab:true, note:'The one input that works with no sensors: effort 1–10 (RPE) and the talk test. Session load = RPE × minutes. Optional niggle tag and shoes. Beginners get "Too hard? Repeat this week", not a failed workout.'}, (c) => {
+  const sel = c.niggle ? 'Knee' : 'Nothing';
+  const rpe = c.stage === 1 ? 5 : c.niggle ? 5 : 4;
+  return {body:`
+    ${topnav('close', '')}
+    <div class="flex sm" style="gap:8px;color:var(--good)">${I('check', 16)}<span class="w5">Saved · ${c.stage === 1 ? '25:00 · run/walk' : '40:12 · 6.48 km'}</span></div>
+    <div class="gap8"></div>
+    <div class="h1">How did that feel?</div>
+    <div class="gap20"></div>
+    <div class="rpe">${Array.from({length:10}, (_, i) => `<button class="${i + 1 === rpe ? 'on' : ''}">${i + 1}</button>`).join('')}</div>
+    <div class="rpe-words">${['Very easy','Easy','Moderate','Hard','All out'].map((t, i) => `<span class="${Math.ceil(rpe / 2) - 1 === i ? 'on' : ''}">${t}</span>`).join('')}</div>
+    <div class="gap24"></div>
+    <div class="h3">Could you talk in…</div><div class="gap12"></div>
+    <div class="seg"><button class="on">Full sentences</button><button>Short phrases</button><button>A few words</button></div>
+    <div class="gap24"></div>
+    <div class="between"><div class="h3">Anything sore?</div><span class="xs faint">Optional</span></div><div class="gap12"></div>
+    <div class="tagset">${['Nothing','Knee','Shin','Calf','Achilles','Foot','Hip','Back'].map(t => `<button class="${t === sel ? 'on' : ''}">${t}</button>`).join('')}</div>
+    ${c.niggle ? `<div class="gap16"></div><div class="note"><div class="grow">
+      <div class="between"><span class="sm w6">Left knee · how bad, 0–10?</span><span class="sm w6">4</span></div><div class="gap12"></div>
+      <div class="rpe" style="grid-template-columns:repeat(11,1fr);gap:3px">${Array.from({length:11}, (_, i) => `<button style="height:34px;font-size:13px;${i === 4 ? '' : 'background:var(--raised)'}" class="${i === 4 ? 'on' : ''}">${i}</button>`).join('')}</div>
+      <div class="xs mute" style="margin-top:10px">We’ll ask again tomorrow morning. If it settles, nothing changes.</div></div></div>` : ''}
+    ${c.stage >= 2 ? `<div class="gap16"></div><div class="row" style="border-top:1px solid var(--rule)"><span class="ic">${I('shoe', 18)}</span><div class="grow"><div class="t">Novablast 4</div><div class="s">412 km · daily trainer</div></div><span class="link">Change</span></div>` : ''}`,
+    foot:`<button class="btn" data-go="${c.niggle ? 'niggle' : 'summary'}">Save</button>${c.stage === 1 ? `<div class="gap8"></div><button class="btn2">Too hard? Repeat this week</button>` : ''}`};
+});
+def('feel-niggle', {group:'Run', title:'How did it feel? (niggle)', notab:true, stage:3, note:'Pain 0–10 by body area after the run, checked again next morning: the pain-monitoring model physios use.'}, (c) => SCREENS.feel.fn({...c, niggle:true}));
+
+const SUMM = {
+  1:{title:'Run 1½ · walk 1½', when:'Wed 28 Oct · 07:15 · Victoria Park', big:'25:00', bigU:'', kp:[['6 of 6','','Runs done'],['9:00','min','Running'],['2.71','km','Distance']],
+     imp:'All six runs done. Your longest non-stop run is now <mark>1½ minutes</mark>, up from 1.', actual:null},
+  2:{title:'Easy 30', when:'Wed 28 Oct · 07:15 · Victoria Park', big:'4.21', bigU:'km', kp:[['30:06','','Time'],['7:09','/km','Pace'],['143','bpm','Heart']],
+     imp:'Same easy effort, <mark>11 s/km faster</mark> than in September.', actual:[[0,3],[1,12],[2,6],[1,6],[0,3]], drift:'Minutes 15–21 drifted into short-phrases effort, on the hill. That’s 2 of your last 4 easy runs.'},
+  3:{title:'Easy 40 + strides', when:'Wed 28 Oct · 07:12 · Victoria Park', big:'6.48', bigU:'km', kp:[['40:12','','Time'],['6:12','/km','Pace'],['141','bpm','Heart']],
+     imp:'Same effort, <mark>12 s/km faster</mark> than in August.', impSub:'Easy pace at 145 bpm: 6:02 /km (August: 6:14)', actual:[[1,22],[2,7],[1,3],...R(6,[[3,1/3],[0,1]])], drift:'Minutes 22–29 drifted into short-phrases effort (heart rate 152). That’s 1 of your last 5 easy runs.'},
+  4:{title:'Steady 60 · 3 × 10 min', when:'Wed 28 Oct · 06:40 · Lea towpath', big:'12.38', bigU:'km', kp:[['1:00:20','','Time'],['4:52','/km','Pace'],['148','bpm','Heart']],
+     imp:'All three marathon-pace reps within <mark>2 s/km</mark> of target, at 4 bpm lower than three weeks ago.', actual:null},
+  5:{title:'6 × 800 m', when:'Wed 28 Oct · 18:30 · Mile End track', big:'11.62', bigU:'km', kp:[['50:44','','Time'],['2:44','avg','Per 800 m'],['322','W','Rep power']],
+     imp:'Reps averaged <mark>2:44</mark>, 4 s faster than the same session in September at the same power.', actual:null},
+};
+def('summary', {group:'Run', title:'Run summary', notab:true, note:'Always says one thing that improved against your own past. Plan and done as two bars on one time scale: the orange patch in \u201cdone\u201d is the easy-pace check made visible. Start and end hidden by default.'}, (c) => {
+  const m = SUMM[c.stage], w = W[c.stage];
+  const splits = [['1','6:21',132,'+4'],['2','6:14',137,'+2'],['3','6:09',143,'−3'],['4','5:58',152,'+6'],['5','6:11',140,'−1'],['6','6:19',146,'0'],['.48','6:02',149,'−2']];
+  const sec = p => { const [a, b] = p.split(':').map(Number); return a * 60 + b; };
+  return {body:`
+    ${topnav('back', '', `<span class="flex"><button class="ib" aria-label="Share">${I('share', 21)}</button><button class="ib" aria-label="More">${I('more', 22)}</button></span>`)}
+    <div class="xs faint">${m.when}</div>
+    <div class="gap4"></div>
+    <div class="h1">${m.title}</div>
+    <div class="flex" style="align-items:baseline;gap:8px;margin-top:8px"><span class="disp d2">${m.big}</span>${m.bigU ? `<span class="unit" style="font-size:24px">${m.bigU}</span>` : ''}</div>
+    <div class="gap16"></div>
+    ${kpis(m.kp)}
+    <div class="sec nob" style="padding-top:20px">
+      <div class="flex" style="gap:8px;margin-bottom:8px"><span class="chip good">${I('arrowUp', 13)}Improved</span></div>
+      <div class="h2" style="font-weight:500;line-height:1.3">${m.imp}</div>${m.impSub ? `<div class="sm mute" style="margin-top:6px">${m.impSub}</div>` : ''}
+      <div class="gap12"></div><button class="link" data-go="explain">Explain this${I('chevR', 14)}</button>
+    </div>
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Planned vs done</span><span class="r">Same time scale</span></div>
+      <div class="gap8"></div>
+      ${strip(w.today, {actual:m.actual || S[w.today].blocks, labels:false})}
+      ${m.drift ? `<div class="gap16"></div><div class="note"><span class="ni">${I('info', 18)}</span><div class="nt sm">${m.drift}</div></div>` : ''}
+    </div>
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Route</span><span class="r">${c.stage === 4 ? 'Lea towpath' : 'Victoria Park'}</span></div>
+      ${routeMap({strides:c.stage === 3})}
+      <div class="xs faint flex" style="gap:6px;margin-top:10px">${I('eyeoff', 14)}Start and end hidden when you share (400 m privacy zone)</div>
+    </div>
+    ${c.stage >= 2 ? `<div class="sec">
+      <div class="hd"><span class="eyebrow">Splits</span><span class="r">Longer bar = faster</span></div>
+      <div class="splits"><div class="sr h"><span>Km</span><span>Pace</span><span></span><span class="r">Bpm</span><span class="r">Elev</span></div>
+      ${splits.map(([k, p, hr, el]) => `<div class="sr"><span class="faint">${k}</span><span class="w6 num">${p}</span><span><div class="sbar${k === '6' ? ' e3' : ''}" style="width:${(420 - sec(p)) / (420 - 340) * 100}%"></div></span><span class="r num">${hr}</span><span class="r num">${el}</span></div>`).join('')}</div>
+      <div class="xs faint" style="margin-top:8px">Km 6 includes the strides.</div>
+    </div>` : ''}
+    ${c.stage >= 3 ? `<div class="sec"><div class="hd"><span class="eyebrow">Data quality</span></div>
+      <div class="kv"><span>GPS</span><span class="flex" style="gap:6px">${I('check', 14)}Good</span></div>
+      <div class="kv"><span>Heart rate</span><span>Wrist · low confidence in strides</span></div>
+      <div class="kv"><span>Session load</span><span>4 × 40 = 160</span></div></div>` : ''}
+    <div class="sec"><div class="tagset"><button>${'Share card'}</button><button>Export FIT</button><button>Send to Strava</button></div></div>`};
+});
+
+def('niggle', {group:'Run', title:'Niggle: plan eased', notab:true, stage:3, note:'Pain rules from the physio pain-monitoring model: up to about 5/10 while running is acceptable if it settles by next morning. Rising next morning → reduce and suggest a physio. Never a diagnosis; copy needs clinical review.'}, (c) => ({body:`
+  ${topnav('back', 'Left knee')}
+  <div class="eyebrow">Niggle check-in · Thu 07:30</div>
+  <div class="gap8"></div>
+  <div class="h1">It’s up this morning, so we’ve eased the week.</div>
+  <div class="gap20"></div>
+  <div class="rows">
+    ${[['Wed 08:05','After the run',4],['Thu 07:30','This morning',5]].map(([t, l, v], i) => `<div class="row" style="gap:14px"><div style="width:104px"><div class="sm w6">${l}</div><div class="xs faint">${t}</div></div>
+      <div class="grow"><div class="bar" style="height:8px"><i style="width:${v * 10}%;background:${i ? 'var(--warn)' : 'var(--ink2)'}"></i></div></div><div class="d5 disp" style="width:44px;text-align:right">${v}<span class="unit" style="font-size:13px">/10</span></div></div>`).join('')}
+  </div>
+  <div class="sec" style="margin-top:8px">
+    <div class="hd"><span class="eyebrow">What changes</span></div>
+    ${changeEntry({when:'Thu 07:31', who:'Plan', open:true, items:[['Fri','Tempo 3 × 8 min','Easy 30, flat'],['Sun','Long 80','Easy 45, flat']], because:[['Knee','5/10 next morning, up from 4']]}, true)}
+  </div>
+  <div class="sec">
+    <div class="hd"><span class="eyebrow">See a physio if</span></div>
+    ${['It goes above 5/10 while running','It changes how you run','It’s still sore in a week'].map(t => `<div class="flex sm" style="gap:10px;padding:5px 0"><span style="color:var(--warn)">${I('alert', 15)}</span>${t}</div>`).join('')}
+    <div class="gap12"></div>
+    <div class="xs faint">Steady doesn’t diagnose injuries. This is general guidance written with physiotherapists.</div>
+  </div>`,
+  foot:`<div class="duo"><button class="btn" data-go="plan">Keep changes</button><button class="btn2">Find a physio</button></div>`}));
+
+def('graduation', {group:'Run', title:'Stage complete', notab:true, stage:1, note:'Graduation from Stage 1: the check is shown, what unlocks is listed, no confetti or badge wall. Runners can stay longer if they want.'}, (c) => ({glow:true, body:`
+  <div class="gap24"></div>
+  <div class="eyebrow">Stage 1 · Start · complete</div>
+  <div class="gap12"></div>
+  <div class="disp d2">30:00</div>
+  <div class="h2" style="margin-top:8px">Non-stop. Twice.</div>
+  <div class="gap12"></div>
+  <div class="lead">Ten weeks ago your longest run was 1 minute. You’re a runner now.</div>
+  <div class="gap24"></div>
+  ${ladderBar(2, .04)}
+  <div class="sec" style="margin-top:24px">
+    <div class="hd"><span class="eyebrow">Stage 2 · Build adds</span></div>
+    <div class="rows">${[['clock','Pace on your runs','Shown, never a target on easy days'],['shield','Spike guard on long runs','Warns before a jump in distance'],['heart','Easy-pace check','Flags easy runs done too hard'],['dumbbell','Strength twice a week','15 min, bodyweight'],['target','A first 5K','parkrun works']].map(([ic, t, s]) => `<div class="row"><span class="ic">${I(ic, 18)}</span><div class="grow"><div class="t">${t}</div><div class="s">${s}</div></div></div>`).join('')}</div>
+  </div>`,
+  foot:`<button class="btn" data-go="plan">See my Build plan</button><div class="hint">Or stay at Start for a few more weeks</div>`}));
+
+def('runs', {group:'Runs', title:'Runs', tab:'runs', note:'History with the same strips, records and a full export you own (FIT, GPX, TCX).'}, (c) => {
+  const w = W[c.stage];
+  const done = w.week.filter(r => r[2] === 'done' && !S[r[1]].strength);
+  const last = c.stage === 1 ? [['Fri 23','rw1','25 min','felt 4'],['Wed 21','rw1','25 min','felt 5'],['Mon 19','rw1','25 min','felt 5']]
+    : c.stage === 2 ? [['Sat 24','long40','5.4 km','7:22'],['Wed 21','e25','3.5 km','7:12'],['Mon 19','e25','3.4 km','7:18']]
+    : c.stage === 3 ? [['Sun 25','long80','12.4 km','6:27'],['Fri 23','tempo','8.3 km','6:01'],['Wed 21','e35','5.6 km','6:16'],['Tue 20','hills','7.0 km','5:41']]
+    : c.stage === 4 ? [['Sun 25','long32','30.0 km','5:24'],['Sat 24','e40','7.6 km','5:16'],['Thu 22','e45','8.4 km','5:21']]
+    : [['Sun 25','long26','26.1 km','4:36'],['Sat 24','tempo25','10.8 km','4:10'],['Fri 23','e40','8.6 km','4:39']];
+  const rec = c.stage === 1 ? [['Longest non-stop','1:30','today'],['Runs completed','8','since 12 Oct'],['Weeks running','3','in a row']]
+    : c.stage === 2 ? [['Longest run','5.4 km','Sat 24 Oct'],['Fastest 1K','6:31','Sat 10 Oct'],['5K','—','parkrun 14 Nov']]
+    : c.stage === 3 ? [['5K','24:51','12 Sep · parkrun'],['10K','52:58','4 Oct'],['Longest run','12.4 km','25 Oct'],['Fastest 1K','4:38','12 Sep']]
+    : c.stage === 4 ? [['Half marathon','1:36:12','Big Half · 7 Sep'],['10K','44:30','Jul'],['Longest run','32.0 km','11 Oct']]
+    : [['Marathon','2:57:40','London · Apr 2026'],['Half marathon','1:22:05','Feb'],['10K','37:12','Oct']];
+  return {body:`
+    <div class="page-t">Runs</div>
+    <div class="sm mute">${c.stage === 1 ? '8 runs since 12 Oct' : '41 runs since August · ' + w.streak}</div>
+    <div class="sec nob" style="padding-top:14px">
+      <div class="hd"><span class="eyebrow">This week</span><span class="r">${done.length} run${done.length === 1 ? '' : 's'}</span></div>
+      <div class="wk rows">${done.map(([d, k, , n]) => `<div class="row" data-go="summary"><div class="day">${d}</div><div class="nm">${S[k].name}</div><div class="sp">${mini(k, 80)}</div><div class="stt">${n.replace('✓ ', '')}</div></div>`).join('')}</div>
+    </div>
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Last week</span><span class="r">${last.length} runs</span></div>
+      <div class="wk rows">${last.map(([d, k, a, b]) => `<div class="row" data-go="summary"><div class="day" style="width:48px">${d}</div><div class="nm">${S[k].name}<small>${a} · ${b}${c.stage >= 2 && c.stage !== 1 ? ' /km' : ''}</small></div><div class="sp">${mini(k, Math.max(80, S[k].min))}</div><div class="stt">${I('chevR', 16, 'class="chev"')}</div></div>`).join('')}</div>
+    </div>
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Records</span></div>
+      <div class="rows">${rec.map(([n, v, s]) => `<div class="row" style="min-height:48px"><div class="grow t">${n}</div><div class="v">${v}<small>${s}</small></div></div>`).join('')}</div>
+    </div>
+    <div class="sec"><button class="btn2">${I('download', 18)}Export all runs · FIT, GPX, TCX</button></div>`, tab:'runs'};
+});
+
+/* ───────── Screens: progress and insight, race, you ───────── */
+def('progress', {group:'Progress', title:'Progress', tab:'progress', note:'The ladder and its graduation checks first, then weekly time as a familiar bar chart, then the numbers this stage has unlocked, each with its evidence grade. Stage 1 sees four numbers; Stage 5 sees power and the lab.'}, (c) => {
+  const w = W[c.stage], st = stg(c.stage);
+  const ms = METRICS.filter(m => m.s <= c.stage && (!m.until || c.stage < m.until));
+  const nxt = c.stage < 4 ? 'To reach Stage ' + (c.stage + 1) + ' · ' + stg(c.stage + 1).name : c.stage === 4 ? 'Perform has no ceiling' : 'Top of the ladder';
+  return {body:`
+    <div class="page-t">Progress</div>
+    <div class="sm mute">Stage ${c.stage} · ${st.name} · ${{1:'3 weeks here', 2:'5 weeks here', 3:'9 weeks here', 4:'31 weeks here', 5:'since 2025'}[c.stage]}</div>
+    <div class="gap20"></div>
+    ${ladderBar(c.stage, w.ladder.p)}
+    <div class="sec" style="margin-top:22px">
+      <div class="hd"><span class="eyebrow">${nxt}</span><span class="r">${w.ladder.checks.filter(x => x[2] >= 1).length} of ${w.ladder.checks.length}</span></div>
+      <div class="rows">${w.ladder.checks.map(([t, s, p]) => `<div class="row" style="align-items:flex-start;gap:12px">
+        <span style="width:22px;height:22px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;margin-top:1px;${p >= 1 ? 'background:var(--ink);color:var(--bg)' : 'border:1.5px solid var(--rule2)'}">${p >= 1 ? I('check', 14) : ''}</span>
+        <div class="grow"><div class="t">${t}</div><div class="s">${s}</div>${p < 1 ? `<div class="bar" style="margin-top:9px"><i style="width:${Math.max(3, p * 100)}%"></i></div>` : ''}</div></div>`).join('')}</div>
+      ${c.stage === 4 ? `<div class="gap8"></div><button class="link">Move up to Compete${I('chevR', 14)}</button>` : ''}
+    </div>
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">${w.weeks.label} · weekly</span><span class="r flex" style="gap:5px">${I('repeat', 14)}${w.streak}</span></div>
+      <div class="gap20"></div>
+      ${weekBars(w.weeks)}
+      ${w.weeks.miss != null ? `<div class="xs faint" style="margin-top:10px">Hatched: a week off. Streaks count weeks, and a missed week pauses them.</div>` : ''}
+    </div>
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Your numbers</span><span class="r">Tap to explain</span></div>
+      <div class="rows">${ms.map(m => `<div class="row" data-go="${m.go || 'explain'}" style="align-items:flex-start;padding:13px 0">
+        <div class="grow"><div class="t">${m.name}${m.lab ? ' <span class="chip line" style="height:18px;font-size:10.5px">Lab</span>' : ''}</div><div class="s">${m.note}</div></div>
+        <div class="v" style="font-size:17px">${m.v}${m.u ? ` <span class="xs faint w5">${m.u}</span>` : ''}${m.d ? `<small class="${m.warn ? 'warnc' : 'goodc'}">${m.d}</small>` : m.warn ? '<small class="warnc">flagged</small>' : ''}</div>
+        <span style="margin-top:2px">${grade(m.g)}</span></div>`).join('')}</div>
+      <div class="xs faint flex" style="gap:6px;margin-top:10px">${grade('A')}<span>Strong</span>${grade('B')}<span>Moderate</span>${grade('C')}<span>Early: shown, never drives the plan alone</span></div>
+    </div>
+    <div class="sec">
+      <div class="rows">
+        <div class="row" data-go="report"><span class="ic">${I('file', 18)}</span><div class="grow"><div class="t">October report</div><div class="s">${c.stage === 1 ? 'Your first month, in plain English' : 'Steadier, not just more'}</div></div>${I('chevR', 16, 'class="chev"')}</div>
+        ${c.stage >= 3 ? `<div class="row" data-go="predictor"><span class="ic">${I('target', 18)}</span><div class="grow"><div class="t">Race predictions</div><div class="s">Ranges, not one number</div></div>${I('chevR', 16, 'class="chev"')}</div>` : ''}
+        ${c.stage >= 4 ? `<div class="row" data-go="race"><span class="ic">${I('lap', 18)}</span><div class="grow"><div class="t">Race kit · Valencia</div><div class="s">Pace plan, fuelling, taper</div></div>${I('chevR', 16, 'class="chev"')}</div>` : `<div class="lock">${I('lock', 18)}<span class="grow">Race kit, durability and HRV unlock at Stage 4 · Perform</span></div>`}
+        <div class="row" data-go="tests"><span class="ic">${I('flask', 18)}</span><div class="grow"><div class="t">Self-tests</div><div class="s">Swap estimates for your own measurements</div></div>${I('chevR', 16, 'class="chev"')}</div>
+      </div>
+    </div>`, tab:'progress'};
+});
+
+def('metric', {group:'Progress', title:'Critical speed', notab:true, minStage:3, note:'Estimated from ordinary runs, re-checked weekly, shown with its range and confidence in words. Powers every pace zone and prediction. Line with a shaded "likely range" band: a familiar chart.'}, (c) => {
+  const pts = [311,310,310,309,308,308,307,306,306,305,305,305];
+  return {body:`
+    ${topnav('back', '', `<button class="pillbtn" data-go="explain">${I('info', 16)}Explain</button>`)}
+    <div class="eyebrow">Critical speed · re-checked Mon 26 Oct</div>
+    <div class="gap12"></div>
+    <div class="flex" style="align-items:baseline;gap:8px"><span class="disp d2">5:05</span><span class="unit" style="font-size:24px">/km</span><span class="sm faint" style="margin-left:auto">11.8 km/h</span></div>
+    <div class="gap12"></div>
+    <div class="sm mute">Likely between <b class="w6" style="color:var(--ink)">4:59 and 5:11</b>. Fairly sure: 14 good efforts in 6 weeks.</div>
+    <div class="gap8"></div>${evidence('B')}
+    <div class="gap24"></div>
+    ${lineBand(pts, pts.map(v => v + 7), pts.map(v => v - 6), {invert:true, tag:'5:05', x:['Aug','Sep','Oct','Now']})}
+    <div class="gap16"></div>
+    <div class="h3" style="font-weight:500">6 s/km faster since August, from your everyday runs. No test needed.</div>
+    <div class="sec" style="margin-top:20px">
+      <div class="hd"><span class="eyebrow">It sets your paces</span></div>
+      <div class="rows">${[[1,'Easy','Full sentences','6:05–6:35'],[2,'Steady','Short phrases','5:25–5:45'],[2,'Tempo','Short phrases','5:05–5:15'],[3,'Hard','A few words','under 4:50']].map(([e, n, t, p]) =>
+        `<div class="row" style="min-height:48px"><span style="width:6px;height:${[0,14,22,30][e]}px;border-radius:2px;background:var(--e${e})"></span><div class="grow"><div class="t">${n}</div><div class="s">${t}</div></div><div class="v">${p}<span class="xs faint w5"> /km</span></div></div>`).join('')}</div>
+    </div>
+    <div class="sec">
+      <div class="rows"><div class="row" data-go="tests"><span class="ic">${I('flask', 18)}</span><div class="grow"><div class="t">Make it sharper</div><div class="s">3-min + 12-min test · narrows the range to about ±2%</div></div><span class="link">Plan it</span></div></div>
+    </div>`};
+});
+
+def('explain', {group:'Progress', title:'Explain this (sheet)', base:'metric', notab:true, minStage:3, note:'"Explain this" on every number, in three layers: one plain sentence for everyone; why it matters and what to do; the science with method, evidence grade, your range and the study. Beginners stay at layer 1.'}, (c) => ({sheet:`
+  <div class="eyebrow">Explain this</div><div class="gap8"></div>
+  <div class="h2">Critical speed: 5:05 /km</div>
+  <div class="gap16"></div>
+  <div class="layer" style="border-top:0;padding-top:0"><div class="lh"><span><span class="n">1</span>In one line</span></div>
+    <p style="color:var(--ink);font-size:16px">The fastest pace you could hold for a long time, about 30 to 40 minutes. Yours is <b>6 s/km faster</b> than in August.</p></div>
+  <div class="layer"><div class="lh"><span><span class="n">2</span>Why it matters</span>${I('chevU', 16, 'style="color:var(--ink3)"')}</div>
+    <p>It sets your pace zones and race predictions. When it improves, your zones move with it, so easy stays easy.</p>
+    <p><b>What to do:</b> nothing new. Keep easy runs chatty and keep Friday’s tempo.</p></div>
+  <div class="layer"><div class="lh"><span><span class="n">3</span>The science</span>${I('chevU', 16, 'style="color:var(--ink3)"')}</div>
+    <div class="gap8"></div>
+    <div class="kv"><span>Method</span><span>Best 3–20 min efforts, weekly</span></div>
+    <div class="kv"><span>Your range</span><span>4:59–5:11 /km</span></div>
+    <div class="kv"><span>Confidence</span><span>Fairly sure · 14 efforts</span></div>
+    <div class="kv"><span>Evidence</span><span class="flex" style="gap:6px">${grade('B')}Moderate</span></div>
+    <p>Across more than 25,000 marathon runners, critical speed taken from everyday training data predicted marathon time within about 8%.</p>
+    <div class="gap12"></div>
+    <div class="row" style="border-top:1px solid var(--rule)"><span class="ic">${I('book', 18)}</span><div class="grow"><div class="t" style="font-size:14px">Smyth & Muniz-Pumares, 2020</div><div class="s">Medicine & Science in Sports & Exercise</div></div>${I('link', 16, 'class="chev"')}</div>
+  </div>
+  <div class="gap8"></div>
+  <button class="btn2" data-go="ask">${I('ask', 18)}Ask about this number</button>`}));
+
+def('predictor', {group:'Progress', title:'Race predictions', notab:true, minStage:3, note:'Weather-style ranges, never one false-precise time. Combines critical speed, two recent races and weekly time (plain Riegel predicts marathons too fast). Says why a goal is or isn’t realistic.'}, (c) => {
+  const s4 = c.stage >= 4;
+  const rows = s4 ? [['5K','20:55',1220,1285,1255,'Fairly sure'],['10K','43:40',2560,2690,2620,'Fairly sure'],['Half','1:36:30',5650,5950,5790,'Fairly sure'],['Marathon','3:31',12360,13020,12660,'Fairly sure · 4 long runs over 28 km', 12600]]
+    : [['5K','24:30',1435,1510,1470,'Fairly sure · you raced one in Sep'],['10K','51:40',3040,3180,3100,'Fairly sure'],['Half','1:59',6960,7380,7140,'Fairly sure', 7200],['Marathon','4:25',15120,17100,15900,'Rough estimate · needs long runs over 25 km']];
+  return {body:`
+    ${topnav('back', 'Race predictions')}
+    <div class="h1" style="margin:4px 0 6px">What you could run now</div>
+    <div class="sm mute">From your critical speed, your last two races and your weekly running. The dot is most likely; the bar is the honest range. Longer races are less certain, so their bars are wider.</div>
+    <div class="gap12"></div>
+    <div class="rows">${rows.map(([n, t, lo, hi, li, conf, goal]) => `<div class="row" style="display:block;padding:16px 0">
+      <div class="between" style="align-items:baseline"><span class="h3">${n}</span><span class="disp d5">${t}</span></div>
+      <div class="gap12"></div>${rangeBar(lo, hi, li, li * .9, li * 1.1, goal)}
+      <div class="between xs" style="margin-top:6px"><span class="faint">${fmtT(lo)} – ${fmtT(hi)}</span><span class="${conf.startsWith('Rough') ? 'warnc' : 'mute'}">${conf}</span></div></div>`).join('')}</div>
+    <div class="sec" style="margin-top:8px">
+      <div class="rulel">
+        <div class="eyebrow">Your goal · ${s4 ? 'Valencia under 3:30' : 'Bath Half under 2:00'}</div>
+        <div class="gap8"></div>
+        <div class="h3" style="font-weight:500;line-height:1.4">${s4 ? '3:30 needs about <b class="w6">85%</b> of your critical speed for three and a half hours. Runners at your level usually hold 82–86%. On track, not certain.' : '2:00 needs about <b class="w6">89%</b> of your critical speed for two hours. Runners at your level usually hold 87–91%. On track, not certain.'}</div>
+      </div>
+      <div class="gap12"></div><div class="xs faint flex" style="gap:6px"><i style="width:2px;height:12px;background:var(--ink);display:inline-block"></i>Line on the bar = your goal</div>
+    </div>
+    <div class="sec"><div class="note"><span class="ni">${I('info', 18)}</span><div class="nt sm">Why not one number? Simple formulas predict marathons too fast: by 10 minutes or more for half of recreational runners. We show a range and publish how close our predictions turn out.</div></div></div>`};
+});
+function fmtT(s) { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = Math.round(s % 60); return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); }
+
+def('report', {group:'Progress', title:'Monthly report', notab:true, note:'A plain-English month: what improved, what didn’t, what’s next, and progress to the next stage. Self-monitoring plus feedback are the best-supported behaviour-change techniques.'}, (c) => {
+  const w = W[c.stage];
+  const b = c.stage === 1
+    ? {h:'Your first month. You kept showing up.', l:'8 runs in 3 weeks, every one done at an easy, chatty effort.', up:['Running minutes per run: from 4 to 9.','Longest non-stop run: from 1 minute to 1½.','Every run felt 4 or 5 out of 10, which is right.'], no:['One Friday missed. The plan moved it, nothing lost.'], nx:['Runs grow by 30 seconds when they feel easy.','By late November: 5 minutes non-stop.']}
+    : {h:'Steadier, not just more.', l:'16 runs, 15 h 40 in October. More running than September, and more of it truly easy.', up:['Easy pace at 145 bpm: 6:02 /km, 12 s faster than August.','Critical speed: 5:05 /km, 6 s faster.','Easy runs done easy: 4 of 5 (September: 2 of 5).'], no:['Long run stuck at 12–13 km: two missed Thursdays, and we don’t add minutes back.','Strength: 5 of 8 sessions.'], nx:['Long runs build to 16 km by 22 Nov, never more than 10% past your longest.','A critical-speed test in week 5 to sharpen your zones.']};
+  const li = (t, ic, col) => `<div class="flex sm" style="gap:10px;padding:7px 0;align-items:flex-start"><span style="color:${col};margin-top:1px">${I(ic, 16)}</span><span>${t}</span></div>`;
+  return {body:`
+    ${topnav('back', '', `<button class="ib" aria-label="Share">${I('share', 21)}</button>`)}
+    <div class="eyebrow">October 2026 · monthly report</div>
+    <div class="gap12"></div>
+    <div class="hl" style="font-size:38px">${b.h}</div>
+    <div class="gap12"></div><div class="lead">${b.l}</div>
+    <div class="gap24"></div>
+    ${weekBars({...w.weeks, vals:w.weeks.vals.slice(-5), x:['28 Sep','5 Oct','12','19','Now'], miss:null}, {h:90})}
+    <div class="sec" style="margin-top:20px"><div class="hd"><span class="eyebrow">What improved</span></div>${b.up.map(t => li(t, 'arrowUp', 'var(--good)')).join('')}</div>
+    <div class="sec"><div class="hd"><span class="eyebrow">What didn’t</span></div>${b.no.map(t => li(t, 'minus', 'var(--ink3)')).join('')}</div>
+    <div class="sec"><div class="hd"><span class="eyebrow">Next month</span></div>${b.nx.map(t => li(t, 'arrowR', 'var(--ink)')).join('')}</div>
+    <div class="sec"><div class="hd"><span class="eyebrow">Towards Stage ${Math.min(5, c.stage + 1)}</span><span class="r">${w.ladder.checks.filter(x => x[2] >= 1).length} of ${w.ladder.checks.length}</span></div>${ladderBar(c.stage, w.ladder.p)}</div>`};
+});
+
+def('tests', {group:'Progress', title:'Self-tests', notab:true, note:'Built-in tests, each with "why do this" and a step-by-step guide: critical-speed 3 + 12 min, talk-test calibration, 5K time trial (parkrun), 30-min threshold and sweat-rate tests from Stage 4.'}, (c) => {
+  const T = [['Talk-test calibration','25 min · easy','Finds your easy/steady line by voice. No sensor needed.',1,'Done 14 Aug'],
+    ['Critical-speed test','3 min + 12 min, all out','Sharpens your zones and predictions to about ±2%.',3,'Suggested · week 5'],
+    ['5K time trial','parkrun works','Checks your predictions against a real race.',2,'Last: 24:51 · 12 Sep'],
+    ['30-minute threshold test','30 min, hard and even','Sets heart-rate zones from your own threshold.',4,''],
+    ['Sweat-rate test','Weigh before and after 60 min','Your own fluid number for race day.',4,'']];
+  return {body:`
+    ${topnav('back', 'Self-tests')}
+    <div class="h1" style="margin:4px 0 6px">Swap estimates for your own numbers</div>
+    <div class="sm mute">All optional. Each test replaces a guess with a measurement.</div>
+    <div class="gap12"></div>
+    <div class="rows">${T.map(([n, d, why, s, st]) => { const lock = s > c.stage; return `<div class="row" style="align-items:flex-start;padding:15px 0;${lock ? 'opacity:.55' : ''}">
+      <span class="ic">${I(lock ? 'lock' : 'flask', 18)}</span><div class="grow"><div class="between"><span class="t">${n}</span>${lock ? `<span class="chip line">Stage ${s}</span>` : ''}</div><div class="s">${d}</div><div class="s" style="margin-top:4px;color:var(--ink)">${why}</div>${!lock && st ? `<div class="xs faint" style="margin-top:6px">${st}</div>` : ''}</div></div>`; }).join('')}</div>
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Critical-speed test · how</span></div>
+      <div class="steps">${[['Warm up','15 min easy, then 3 strides'],['3 minutes all out','As far as you can. Even pace, not a sprint start.'],['Recover','30 min easy or walk. Or do part 4 on another day.'],['12 minutes all out','Same rules. Flat route or a track.'],['Cool down','10 min easy']].map(([t, s], i) => `<div class="st"><span class="i">0${i + 1}</span><span>${t}<span class="w">${s}</span></span><span></span></div>`).join('')}</div>
+    </div>`, foot:c.stage >= 3 ? `<button class="btn">Add to week 5</button>` : ''};
+});
+
+def('durability', {group:'Progress', title:'Durability', notab:true, minStage:4, note:'Pace at the same heart rate, first vs last third of long runs: how well you hold pace late. A big predictor alongside VO₂max, threshold and economy, explained by no consumer app. Words and a before/after bar, no new chart type.'}, (c) => ({body:`
+  ${topnav('back', '', `<button class="pillbtn" data-go="explain">${I('info', 16)}Explain</button>`)}
+  <div class="eyebrow">Durability · last 3 long runs</div>
+  <div class="gap12"></div>
+  <div class="flex" style="align-items:baseline;gap:10px"><span class="disp d2">−4%</span></div>
+  <div class="sm mute" style="margin-top:10px">pace at the same heart rate, after 75 minutes</div>
+  <div class="gap24"></div>
+  ${[['September','−7%',7,false],['October','−4%',4,true]].map(([m, t, v, on]) => `<div class="flex" style="gap:12px;margin-bottom:12px"><span class="sm ${on ? 'w6' : 'mute'}" style="width:78px">${m}</span><div class="grow"><div style="height:22px;width:${v / 8 * 100}%;border-radius:4px;background:${on ? 'var(--ink)' : 'var(--well2)'}"></div></div><span class="sm w6 num" style="width:40px;text-align:right">${t}</span></div>`).join('')}
+  <div class="xs faint">Shorter bar = you hold pace better late in the run.</div>
+  <div class="gap20"></div>
+  <div class="h3" style="font-weight:500;line-height:1.45">You now slow 4% late in long runs at the same heart rate, down from 7% in September. That’s what holds marathon pace past 30 km.</div>
+  <div class="sec" style="margin-top:20px">
+    <div class="hd"><span class="eyebrow">Pace at 150 bpm · first third → last third</span></div>
+    ${[['Sun 11 Oct','5:18','5:31','−4.1%'],['Sun 18 Oct','5:16','5:28','−3.8%'],['Sun 25 Oct','5:14','5:26','−3.8%']].map(([d, a, b, p]) => `<div class="kv"><span>${d}</span><span>${a} → ${b} <span class="faint w5" style="margin-left:6px">${p}</span></span></div>`).join('')}
+    <div class="xs faint" style="margin-top:8px">Only runs at 8–16 °C are compared, so heat doesn’t skew it.</div>
+  </div>
+  <div class="sec">${evidence('C', 'promising')}<div class="sm mute" style="margin-top:8px">Most research on durability is from cycling. Shown to help you understand your running; it doesn’t change your plan on its own.</div></div>`}));
+
+def('race', {group:'Race', title:'Race kit', notab:true, minStage:4, note:'Course-aware pace plan from critical speed with heat adjustment from the forecast and the runner’s own heat response; a fuelling timeline (g/h, gel by gel) practised in long runs; automatic 2-week taper; one-page race card and watch course.'}, (c) => {
+  const gels = [25,50,75,100,125,150,175,195];
+  return {glow:true, body:`
+    ${topnav('back', '', `<button class="ib" aria-label="Share">${I('share', 21)}</button>`)}
+    <div class="eyebrow">Race kit · Sun 6 Dec · 08:15</div>
+    <div class="gap8"></div>
+    <div class="h1">Valencia Marathon</div>
+    <div class="flex" style="align-items:baseline;gap:10px;margin-top:6px"><span class="disp d2">39</span><span class="unit" style="font-size:22px">days</span></div>
+    <div class="sm mute" style="margin-top:8px">Goal <b class="w6" style="color:var(--ink)">3:30</b> · likely 3:26–3:37 · flat course, +38 m in total</div>
+    <div class="sec" style="margin-top:22px">
+      <div class="hd"><span class="eyebrow">Pace plan</span><span class="r">Finish about 3:29:50</span></div>
+      <div class="rows">${[['0–10 km','5:00','Hold back in the crowd'],['10–21 km','4:56',''],['21–30 km','4:55','Halfway in about 1:44:40'],['30–35 km','5:02','+4 s · 17 °C by 11:00'],['35–42.2 km','5:01','+4 s heat · then whatever is left']].map(([k, p, n]) =>
+        `<div class="row" style="min-height:48px"><div style="width:84px" class="sm w6">${k}</div><div class="grow xs mute">${n}</div><div class="v">${p}<span class="xs faint w5"> /km</span></div></div>`).join('')}</div>
+      <div class="xs faint" style="margin-top:8px">Heat: Valencia forecast, and your own response (+2.1 s/km per °C above 15 °C).</div>
+    </div>
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Fuelling · 70 g an hour</span><span class="r">8 gels + drink</span></div>
+      <div class="gap24"></div>
+      ${strip({blocks:[[2,210]]}, {h:30, gels, labels:false})}
+      <div class="strip-ax"><span>Start</span><span>1 h</span><span>2 h</span><span>3 h</span><span>3:30</span></div>
+      <div class="gap12"></div>
+      <div class="sm mute">A 22 g gel every 25 min, plus sports drink at 4 stations. Practised: <b class="w6" style="color:var(--ink)">4 of 5</b> long runs at 60+ g/h, no stomach trouble.</div>
+    </div>
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Taper · starts Sun 22 Nov</span>${evidence('A')}</div>
+      <div class="gap16"></div>
+      <div class="bars" style="height:80px">${[7.9,8.1,6.4,8.3,8.5,8.0,4.6,3.2].map((v, i) => `<div class="b ${i === 2 ? 'on' : i > 5 ? 'part' : ''}" style="height:${v / 9 * 100}%">${i === 2 ? '<span class="cv">This week</span>' : ''}</div>`).join('')}</div>
+      <div class="bars-x">${['12 Oct','19','26','2 Nov','9','16','23','30'].map((x, i) => `<span class="${i === 2 ? 'on' : ''}">${x}</span>`).join('')}</div>
+      <div class="sm mute" style="margin-top:12px">Volume drops about 45% over the last two weeks, gradually. Intensity stays.</div>
+    </div>
+    <div class="sec">
+      <div class="kv"><span>Sweat rate</span><span>1.1 L/h at 12 °C · tested 4 Oct</span></div>
+      <div class="kv"><span>Drink plan</span><span>About 500 ml an hour</span></div>
+      <div class="kv"><span>Race shoes</span><span>Endorphin Pro 4 · 46 km</span></div>
+    </div>`,
+    foot:`<div class="duo"><button class="btn" style="font-size:15px">${I('watch', 18)}Course to watch</button><button class="btn2">${I('file', 18)}Race card</button></div>`};
+});
+
+def('you', {group:'You', title:'You', tab:'you', note:'Shoes with mileage and rotation, devices at a glance, safety (live location to a chosen contact, privacy zones), health-data permissions and export. Stage 5 adds coach mode, zones and overrides, raw export and the DFA-α1 lab.'}, (c) => ({body:`
+  <div class="gap12"></div>
+  <div class="flex" style="gap:14px"><span class="ava">PN</span><div class="grow"><div class="h1">Priya</div><div class="sm mute">Stage ${c.stage} · ${stg(c.stage).name} · with Steady since ${{4:'Jan 2026', 5:'May 2024'}[c.stage] || 'Jun 2026'}</div></div><button class="ib well" aria-label="Settings">${I('sliders', 20)}</button></div>
+  <div class="sec" style="margin-top:20px">
+    <div class="hd"><span class="eyebrow">Shoes</span><span class="r">Rotating 2 pairs</span></div>
+    ${[['Novablast 4','Daily · easy and long',412,700],['Endorphin Speed 4','Fast days',188,600]].map(([n, s, k, mx]) => `<div class="row" style="display:block;padding:12px 0"><div class="between"><div><div class="t">${n}</div><div class="s">${s}</div></div><div class="v">${k}<span class="xs faint w5"> / ${mx} km</span></div></div><div class="bar" style="margin-top:10px"><i style="width:${k / mx * 100}%"></i></div></div>`).join('')}
+    <div class="xs faint" style="margin-top:6px">Rotating pairs is linked with fewer injuries, though careful runners may simply rotate more.</div>
+  </div>
+  <div class="sec" data-go="devices">
+    <div class="hd"><span class="eyebrow">Devices</span><button class="link">All${I('chevR', 14)}</button></div>
+    <div class="rows">
+      <div class="row"><span class="ic">${I('watch', 18)}</span><div class="grow"><div class="t">Apple Watch Ultra 2</div><div class="s">Synced 2 min ago</div></div><span class="chip good">${I('check', 13)}On</span></div>
+      <div class="row"><span class="ic">${I('bt', 18)}</span><div class="grow"><div class="t">Polar H10 strap</div><div class="s">Bluetooth heart rate</div></div><span class="chip">Last used Tue</span></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="hd"><span class="eyebrow">Safety</span></div>
+    <div class="rows">
+      <div class="row"><span class="ic">${I('pin', 18)}</span><div class="grow"><div class="t">Live location</div><div class="s">Leah sees where you are while you run</div></div><span class="toggle on"></span></div>
+      <div class="row"><span class="ic">${I('eyeoff', 18)}</span><div class="grow"><div class="t">Privacy zones</div><div class="s">Home · 400 m hidden on shared routes</div></div>${I('chevR', 16, 'class="chev"')}</div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="hd"><span class="eyebrow">Health data</span></div>
+    <div class="rows">
+      <div class="row" data-go="o-consent"><span class="ic">${I('shield', 18)}</span><div class="grow"><div class="t">What Steady may use</div><div class="s">Heart rate on · HRV and sleep on · cycle log off</div></div>${I('chevR', 16, 'class="chev"')}</div>
+      <div class="row"><span class="ic">${I('download', 18)}</span><div class="grow"><div class="t">Download my data</div><div class="s">FIT, GPX and CSV, all of it</div></div>${I('chevR', 16, 'class="chev"')}</div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="hd"><span class="eyebrow">Training</span></div>
+    <div class="rows">
+      <div class="row"><span class="ic">${I('sliders', 18)}</span><div class="grow"><div class="t">Intensity mix</div><div class="s">${c.stage >= 5 ? 'Polarised: mostly easy and hard' : 'Pyramidal: mostly easy, some steady, a little hard'}</div></div>${c.stage >= 5 ? '<span class="chip">Changed</span>' : `<span class="xs faint">${c.stage >= 5 ? '' : 'Polarised at Stage 5'}</span>`}</div>
+      <div class="row"><span class="ic">${I('volume', 18)}</span><div class="grow"><div class="t">Voice cues</div><div class="s">Block changes, every km, spike guard</div></div>${I('chevR', 16, 'class="chev"')}</div>
+      ${c.stage >= 5 ? `
+      <div class="row"><span class="ic">${I('users', 18)}</span><div class="grow"><div class="t">Coach</div><div class="s">Sam Okafor can see and edit your plan</div></div><span class="chip good">${I('check', 13)}Shared</span></div>
+      <div class="row"><span class="ic">${I('heart', 18)}</span><div class="grow"><div class="t">Zones and overrides</div><div class="s">Custom heart rate, pace and power</div></div>${I('chevR', 16, 'class="chev"')}</div>
+      <div class="row"><span class="ic">${I('flask', 18)}</span><div class="grow"><div class="t">Lab: DFA-α1 threshold</div><div class="s">Experimental · chest strap only</div></div>${I('chevR', 16, 'class="chev"')}</div>
+      <div class="row"><span class="ic">${I('file', 18)}</span><div class="grow"><div class="t">Raw data export</div><div class="s">Second-by-second CSV, every stream</div></div>${I('chevR', 16, 'class="chev"')}</div>` : `<div class="lock" style="margin-top:8px">${I('lock', 18)}<span class="grow">Coach mode, custom zones and the lab come at Stage 5</span></div>`}
+    </div>
+  </div>`, tab:'you'}));
+
+def('devices', {group:'You', title:'Devices and apps', notab:true, note:'Phone-first; every device adds accuracy. Launch set needs no approvals (Health app, Health Connect, Bluetooth, WorkoutKit). Garmin Starter: workouts + courses, no history backfill. Polar: last 30 days only. Strava: share only, never a data source.'}, (c) => {
+  const row = (ic, t, s, r) => `<div class="row" style="align-items:flex-start;padding:13px 0"><span class="ic">${I(ic, 18)}</span><div class="grow"><div class="t">${t}</div><div class="s">${s}</div></div>${r}</div>`;
+  return {body:`
+    ${topnav('back', 'Devices and apps')}
+    <div class="h1" style="margin:4px 0 6px">Works with just your phone</div>
+    <div class="sm mute">Each device makes your numbers more accurate. None is required.</div>
+    <div class="sec nob" style="padding-top:14px"><div class="hd"><span class="eyebrow">Connected</span></div><div class="rows">
+      ${row('watch','Apple Watch Ultra 2','Reads runs · sends workouts to the Workout app','<span class="chip good">' + I('check', 13) + '2 min ago</span>')}
+      ${row('bt','Polar H10 chest strap','Bluetooth heart rate · best for intervals','<span class="chip">Tue</span>')}
+      ${row('heart','Health app','Sleep, resting heart rate, HRV','<span class="chip">3 of 5 allowed</span>')}
+    </div></div>
+    <div class="sec"><div class="hd"><span class="eyebrow">Add</span></div><div class="rows">
+      ${row('watch','Garmin','Workouts and race courses to your watch. History starts the day you connect.','<span class="link">Connect</span>')}
+      ${row('watch','COROS','Sends your next 7 days of workouts','<span class="link">Connect</span>')}
+      ${row('watch','Polar Flow','Reads runs from the last 30 days','<span class="link">Connect</span>')}
+      ${row('watch','Suunto','Runs, and routes to your watch','<span class="link">Connect</span>')}
+      ${row('bolt','Footpod or Stryd','Pace on treadmills, cadence and running power','<span class="link">Pair</span>')}
+    </div></div>
+    <div class="sec"><div class="hd"><span class="eyebrow">Share only</span></div><div class="rows">
+      ${row('share','Strava','Post finished runs. Steady never reads your data from Strava.','<span class="toggle on"></span>')}
+    </div></div>`};
+});
+
+const SCORES = `<table class="pg-score">
+<tr><th>Quality</th><th>Round 1</th><th>Round 2</th><th>Round 3 · after your review</th></tr>
+<tr><td>Composition</td><td class="m">Matches · run block ~45% of the fold, week in 46 px rows (010: "11 PTS" over a mini table)</td><td class="m">Matches · live controls pinned to the bottom</td><td class="m">Matches · unchanged</td></tr>
+<tr><td>Scale</td><td class="m">Matches · 92 px duration over 15 px body, 124 px live clock (010 "1:12.171")</td><td class="m">Matches</td><td class="m">Matches · heavier 800 weight makes the same sizes hit harder</td></tr>
+<tr><td>Atmosphere</td><td class="w">Weaker · glow at 13% barely reads</td><td class="m">Matches · one warm corner behind the hero</td><td class="m">Matches · unchanged; the strip stays flat on purpose, the glow stays behind the hero</td></tr>
+<tr><td>Bespoke element</td><td class="m">Matches · the session strip on 7 surfaces</td><td class="m">Matches</td><td class="x">You rejected it twice: first the 20 s strides drew as hairlines, then as a comb of pills next to a slab. Now a flat segmented timeline: one even bar, colour darkens with effort, short repeats join into one set cut per rep, and plan vs done become two bars. Picked from three treatments rendered on real screens.</td></tr>
+<tr><td>Typographic character</td><td class="m">Matches · Archivo condensed for figures</td><td class="m">Matches</td><td class="x">You said it was dull, and you were right: calm, upright and medium weight is wrong for running. Now Anybody 800 italic at 68% width for numbers and titles, Hanken Grotesk for text, picked from four options rendered on the real screens.</td></tr>
+<tr><td>Micro-detail</td><td class="w">Weaker · wrong glyph, truncated names, clipped callout</td><td class="m">Matches · weather line, grade boxes, now-line chip, hatched weeks, privacy hatch</td><td class="m">Matches · session ticks placed by time on the adjusted strip</td></tr>
+<tr><td>Real content</td><td class="m">Matches · zones derived from CS 5:05; 2:00 goal = 89% of CS</td><td class="m">Matches · what-changed log differs by stage</td><td class="m">Matches</td></tr>
+<tr><td>Confidence</td><td class="w">Weaker · three grey wells drifted toward a card stack</td><td class="m">Matches · one outlined tool group, one black Start</td><td class="m">Matches · the type now commits to energy</td></tr>
+</table>
+<p style="font-size:13px;color:var(--pg-ink2);margin-top:14px;line-height:1.5">Round 2 swept all 34 screens at 390 px in light, and the core seven in dark, and fixed 15 smaller issues. Among them: race ranges moved to one shared scale so longer races show wider bands, the placement screen showed this week's ticks instead of a first-week plan, the now-label clipped at the end of a run, and the stage 4 what-changed log carried stage 3 entries. Two of my "matches" were wrong by your eye; round 3 is the fix.</p>
+<div class="pg-facts" style="margin-top:22px">
+<div><b>Not done: a readiness score</b>HRV evidence is mixed, so it appears as a range bar that can soften a day. It never becomes a number that overrides the runner.</div>
+<div><b>Not done: a map on the live screen</b>The strip shows progress through the session; the map is in the summary, with start and end hidden.</div>
+<div><b>Not done: badges and confetti</b>Graduation shows the check you passed and what unlocks. Streaks count weeks, so rest days never break them.</div>
+<div><b>Not done: rainbow zones</b>One hue in three shades plus height encodes effort, so walk, easy, steady and hard read in greyscale too.</div>
+</div>`;
+/* ───────── App: prototype, board, system ───────── */
+const ORDER = ['o-welcome','o-level','o-import','o-week','o-consent','o-ready',
+  'today','session','move','lapse',
+  'live','live-low','live-spike','feel','feel-niggle','summary','niggle','graduation',
+  'plan','changes','strength',
+  'runs',
+  'progress','metric','explain','predictor','durability','report','tests',
+  'race','ask','ask-pain','you','devices'];
+const GROUPS = ['Onboarding','Today','Run','Plan','Runs','Progress','Race','Ask','You'];
+
+const state = {view:'proto', screen:'today', stage:3, theme:'light', hist:[], zoom:.72};
+(function readHash() {
+  const [v, s, st, th] = location.hash.slice(1).split('/');
+  if (['proto','board','system'].includes(v)) state.view = v;
+  if (SCREENS[s]) state.screen = s;
+  if (+st >= 1 && +st <= 5) state.stage = +st;
+  if (th === 'dark' || th === 'light') state.theme = th;
+})();
+const writeHash = () => history.replaceState(null, '', `#${state.view}/${state.screen}/${state.stage}/${state.theme}`);
+
+function effStage(m, stage) { return m.stage || (m.minStage ? Math.max(m.minStage, stage) : stage); }
+function renderScreen(id, stage, theme, extraCls = '') {
+  const m = SCREENS[id], st = effStage(m, stage);
+  const out = m.fn({stage:st, theme});
+  let b = out;
+  if (m.base) { const bm = SCREENS[m.base]; b = bm.fn({stage:effStage(bm, st), theme}); }
+  const tab = b.tab;
+  const cls = ['scr', tab ? '' : 'notab', b.foot ? 'hasfoot' : '', extraCls].filter(Boolean).join(' ');
+  return `<div class="${cls}" data-theme="${theme}" data-id="${id}">${b.glow ? '<div class="glow"></div>' : ''}${statusBar(out.time || b.time || '9:41')}
+    <div class="body">${b.body || ''}</div>${b.foot ? `<div class="foot">${b.foot}</div>` : ''}${tab ? tabbar(tab) : '<div class="home-ind"></div>'}
+    ${out.sheet ? `<div class="scrim" data-go="back"></div><div class="sheet"><div class="grab"></div>${out.sheet}</div><div class="home-ind" style="z-index:30"></div>` : ''}</div>`;
+}
+
+/* ── Page chrome ── */
+function chrome() {
+  const seg = (items, cur, attr) => `<div class="pg-seg">${items.map(([v, l]) => `<button class="${String(v) === String(cur) ? 'on' : ''}" ${attr}="${v}">${l}</button>`).join('')}</div>`;
+  return `<header class="pg-top">
+    <div class="pg-brand">${logo(28)}<div><b>Steady</b><span>Running app · full-flow prototype</span></div></div>
+    ${seg([['proto','Prototype'],['board','All screens'],['system','System']], state.view, 'data-view')}
+    <div class="pg-ctrls"><span class="pg-lab">Runner at stage</span>${seg([1,2,3,4,5].map(n => [n, n + ' ' + STAGES[n - 1].name]), state.stage, 'data-stage')}
+    ${seg([['light','Light'],['dark','Dark']], state.theme, 'data-theme-set')}</div></header>`;
+}
+
+function protoView() {
+  const m = SCREENS[state.screen];
+  const st = effStage(m, state.stage);
+  const nav = GROUPS.map(g => {
+    const ids = ORDER.filter(id => SCREENS[id].group === g);
+    if (!ids.length) return '';
+    return `<div class="pg-navg"><div class="pg-navh">${g}</div>${ids.map(id => `<button class="${id === state.screen ? 'on' : ''}" data-open="${id}">${SCREENS[id].title}${SCREENS[id].stage ? `<i>S${SCREENS[id].stage}</i>` : SCREENS[id].minStage && SCREENS[id].minStage > state.stage ? `<i>S${SCREENS[id].minStage}</i>` : ''}</button>`).join('')}</div>`;
+  }).join('');
+  return `<div class="pg-proto">
+    <aside class="pg-nav">${nav}</aside>
+    <div class="pg-stage"><div class="pg-phone">${renderScreen(state.screen, state.stage, state.theme)}</div>
+      <div class="pg-hint">Tap anything with an action. Use the stage switch to watch the app grow with the runner.</div></div>
+    <aside class="pg-notes">
+      <div class="pg-eyebrow">${m.group}${st !== state.stage ? ` · shown at stage ${st}` : ''}</div>
+      <h2>${m.title}</h2>
+      <p>${m.note || ''}</p>
+      <div class="pg-sep"></div>
+      <div class="pg-eyebrow">Stage ${state.stage} · ${STAGES[state.stage - 1].name}</div>
+      <p class="pg-small">${STAGES[state.stage - 1].who}. Goal: ${STAGES[state.stage - 1].goal.toLowerCase()}.</p>
+      <div class="pg-sep"></div>
+      <div class="pg-eyebrow">Jump to</div>
+      <div class="pg-jumps">${['today','live','summary','plan','progress','race'].map(id => `<button data-open="${id}">${SCREENS[id].title}</button>`).join('')}</div>
+    </aside></div>`;
+}
+
+function frame(id, stage, label) {
+  const m = SCREENS[id], st = effStage(m, stage);
+  return `<figure class="pg-fr" data-open="${id}" data-st="${st}"><figcaption><b>${label || m.title}</b><span>Stage ${st}</span></figcaption>
+    <div class="pg-frs" style="zoom:${state.zoom}">${renderScreen(id, stage, state.theme)}</div></figure>`;
+}
+function boardView() {
+  const ladder = `<section class="pg-bgroup"><h3>Today across the ladder <span>Same screen, five runners: depth grows with the stage</span></h3><div class="pg-row">${[1,2,3,4,5].map(n => frame('today', n, 'Stage ' + n + ' · ' + STAGES[n - 1].name)).join('')}</div></section>`;
+  const live = `<section class="pg-bgroup"><h3>Live run across the ladder <span>Run/walk countdown at Stage 1; target pace and power later</span></h3><div class="pg-row">${[1,2,4,5].map(n => frame('live', n, 'Stage ' + n + ' · ' + STAGES[n - 1].name)).join('')}</div></section>`;
+  const groups = GROUPS.map(g => {
+    const ids = ORDER.filter(id => SCREENS[id].group === g);
+    return `<section class="pg-bgroup"><h3>${g} <span>${ids.length} screen${ids.length > 1 ? 's' : ''}</span></h3><div class="pg-row">${ids.map(id => frame(id, state.stage)).join('')}</div></section>`;
+  }).join('');
+  return `<div class="pg-board"><div class="pg-btop"><div><h1>All screens</h1><p>${ORDER.length} screens at stage ${state.stage}, ${state.theme}. Click any screen to open it in the prototype.</p></div>
+    <div class="pg-seg">${[[.5,'50%'],[.72,'72%'],[1,'100%']].map(([z, l]) => `<button class="${z === state.zoom ? 'on' : ''}" data-zoom="${z}">${l}</button>`).join('')}</div></div>
+    ${ladder}${groups}${live}</div>`;
+}
+
+function systemView() {
+  const sw = (v, n, note) => `<div class="pg-sw"><i style="background:var(${v})"></i><b>${n}</b><span>${note}</span></div>`;
+  const box = (inner, pad = 24) => `<div class="scr sysbox" data-theme="${state.theme}" style="padding:${pad}px">${inner}</div>`;
+  return `<div class="pg-sys">
+    <section><div class="pg-eyebrow">The idea</div>
+      <h1>Every run is drawn the same way, everywhere.</h1>
+      <p class="pg-lead">A segmented bar to scale: length is time, and the colour darkens as the effort rises. Today shows it, the live run fills it, the summary lays what you did over what was planned, and the week is a timetable of them. Plain words carry the meaning (“full sentences”), numbers come in as the runner climbs the ladder, and every number can explain itself.</p>
+      <div class="pg-facts">
+        <div><b>Stance</b>Ink and bone: warm paper, near-black ink, hairline rules instead of cards. One hot track-red, in three shades, for effort only.</div>
+        <div><b>Signature move</b>The session timeline. On Today it sits under a 92px duration, with one black Start bar beneath. Short repeats join into one set, cut once per rep.</div>
+        <div><b>Type</b>Anybody, heavy italic at 68% width, for numbers and titles: a race clock that leans forward. Hanken Grotesk 400 / 500 / 600 for everything you read.</div>
+        <div><b>References</b>010 (numbers as the hero, faded units), 003 (one accent spent on few things), 001 (value + change + context rows).</div>
+      </div></section>
+    <section><div class="pg-eyebrow">The strip</div>${box(`
+      <div class="eyebrow">Plan · today, session detail, week</div><div class="gap16"></div>${strip('e40s')}
+      <div class="gap24"></div><div class="eyebrow">Live · fills as you run, with the now-line</div><div class="gap32"></div>${strip('e40s', {at:17.7, atLabel:'17:42', labels:false})}
+      <div class="gap24"></div><div class="eyebrow">Planned vs done · two bars, one time scale</div><div class="gap12"></div>${strip('e40s', {actual:SUMM[3].actual, labels:false})}
+      <div class="gap24"></div><div class="eyebrow">Effort · darker means harder, and it still reads in greyscale</div><div class="gap12"></div>
+      <div class="flex" style="gap:22px;align-items:flex-start">${EFFORT.map((e, i) => `<div><div style="width:64px;height:20px;border-radius:8px;background:var(--e${i})"></div><div class="sm w6" style="margin-top:8px">${e.k}</div><div class="xs mute">${e.talk}</div></div>`).join('')}</div>`)}</section>
+    <section><div class="pg-eyebrow">Colour</div>${box(`<div class="pg-sws">
+      ${sw('--bg','Bone','Page')}${sw('--raised','Paper','Sheets, fields')}${sw('--well','Well','Notes, tools, today row')}${sw('--rule','Rule','Hairlines')}
+      ${sw('--ink','Ink','Text, Start, selection')}${sw('--ink2','Ink 2','Secondary text')}${sw('--ink3','Ink 3','Labels, axes')}
+      ${sw('--e1','Easy','Full sentences')}${sw('--e2','Steady','Short phrases')}${sw('--e3','Hard · accent','A few words, now-dot, the one highlight')}${sw('--e0','Walk','Walk, rest, recovery')}
+      ${sw('--good','Good','Improved: word + arrow + tint')}${sw('--warn','Caution','Spike guard, niggles, low confidence')}</div>
+      <div class="xs mute" style="margin-top:16px">No semantic red: the accent is a red family, so "bad" is said with amber and words. Buttons are ink, never the accent.</div>`)}</section>
+    <section><div class="pg-eyebrow">Type · Anybody + Hanken Grotesk</div>${box(`
+      <div class="flex" style="align-items:baseline;gap:8px"><span class="disp d2">40</span><span class="unit" style="font-size:24px">min</span><span class="xs mute" style="margin-left:16px">Display · Anybody 800 italic · 92 / 124 px · width 68%</span></div>
+      <div class="gap16"></div><div class="page-t">Progress</div><div class="xs mute">Page title · Anybody 800 italic · 34 px · width 82%</div>
+      <div class="gap16"></div><div class="h1">Easy run + strides</div><div class="xs mute">Title · Anybody 800 italic · 27 px · width 82%</div>
+      <div class="gap16"></div><div class="h2" style="font-weight:500">Same effort, <mark>12 s/km faster</mark> than in August.</div><div class="xs mute">Insight · Hanken Grotesk 20 px · 500, number marked</div>
+      <div class="gap16"></div><div>Tempo moved to Friday. You rated Tuesday’s hills 8/10, harder than planned.</div><div class="xs mute">Body · Hanken Grotesk 15 px · 400 · tabular figures</div>
+      <div class="gap16"></div><div class="eyebrow">This week</div><div class="xs mute">Label · Hanken Grotesk 11.5 px · 600 · +0.085em</div>`)}</section>
+    <section><div class="pg-eyebrow">Components</div>${box(`
+      <button class="btn split"><span class="flex" style="gap:10px">${I('play', 20)}Start run</span><span class="sub">Cues · watch ready</span></button><div class="gap8"></div>
+      <div class="tools"><button>${I('move', 16)}Move</button><button>${I('swap', 16)}Swap</button><button>${I('easier', 16)}Easier</button><button>${I('watch', 16)}Watch</button></div>
+      <div class="gap16"></div><div class="flex" style="flex-wrap:wrap;gap:8px"><span class="chip good">${I('arrowUp', 13)}Improved</span><span class="chip warn">${I('alert', 13)}Spike guard</span><span class="chip">${I('move', 12)}Moved</span><span class="chip">Missed</span><span class="chip line">Stage 3</span>${evidence('B', 'fairly sure')}</div>
+      <div class="gap16"></div><div class="note"><span class="ni">${I('info', 18)}</span><div class="nt">Every adaptation says what changed and why, with an Undo.</div></div>
+      <div class="gap16"></div>${rangeBar(7020, 7380, 7140, 6900, 7500, 7200)}<div class="xs mute" style="margin-top:6px">Range bar: likely dot, honest band, goal line</div>
+      <div class="gap16"></div><div class="rpe">${Array.from({length:10}, (_, i) => `<button class="${i === 3 ? 'on' : ''}">${i + 1}</button>`).join('')}</div>`, 20)}</section>
+    <section><div class="pg-eyebrow">Compare score · against 010, 003, 001</div>${SCORES}</section>
+  </div>`;
+}
+const SCORES_DEFAULT = '';
+
+function render() {
+  const root = document.getElementById('app');
+  if (window.SOLO) {
+    const S0 = window.SOLO;
+    root.innerHTML = `<div class="solo">${renderScreen(S0.screen, S0.stage, S0.theme, 'solo')}</div>`;
+    const fit = () => { if (!S0.full) return; const scr = root.querySelector('.scr'), body = scr.querySelector('.body');
+      scr.style.height = (50 + body.scrollHeight + (scr.classList.contains('notab') ? 0 : 84)) + 'px'; };
+    fit(); document.fonts && document.fonts.ready.then(fit);
+    document.body.style.background = S0.theme === 'dark' ? '#121315' : '#F4F2EE';
+    return;
+  }
+  document.documentElement.dataset.pg = state.theme;
+  root.innerHTML = chrome() + (state.view === 'proto' ? protoView() : state.view === 'board' ? boardView() : systemView());
+  fitPhone();
+  writeHash();
+}
+function fitPhone() {
+  const ph = document.querySelector('.pg-phone');
+  if (ph) ph.style.zoom = Math.min(1, Math.max(.6, (window.innerHeight - 130) / 844)).toFixed(3);
+}
+window.addEventListener('resize', fitPhone);
+
+function go(id) {
+  if (id === 'back') { state.screen = state.hist.pop() || (SCREENS[state.screen].base || 'today'); }
+  else if (SCREENS[id]) { state.hist.push(state.screen); state.screen = id; }
+  render();
+  const b = document.querySelector('.pg-phone .body'); if (b) b.scrollTop = 0;
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-view],[data-stage],[data-theme-set],[data-zoom],[data-open],[data-go]');
+  if (!t || window.SOLO) return;
+  if (t.dataset.view) { state.view = t.dataset.view; render(); window.scrollTo(0, 0); return; }
+  if (t.dataset.stage) { state.stage = +t.dataset.stage; render(); return; }
+  if (t.dataset.themeSet) { state.theme = t.dataset.themeSet; render(); return; }
+  if (t.dataset.zoom) { state.zoom = +t.dataset.zoom; render(); return; }
+  const fr = e.target.closest('.pg-fr');
+  if (fr) { state.view = 'proto'; state.hist = []; state.screen = fr.dataset.open; if (+fr.dataset.st !== state.stage && !SCREENS[fr.dataset.open].stage && !SCREENS[fr.dataset.open].minStage) state.stage = +fr.dataset.st; render(); window.scrollTo(0, 0); return; }
+  if (t.dataset.open) { state.hist = []; state.screen = t.dataset.open; render(); return; }
+  if (t.dataset.go && t.closest('.pg-phone')) go(t.dataset.go);
+});
+setInterval(() => {
+  if (state.view !== 'proto') return;
+  document.querySelectorAll('.pg-phone [data-clock]').forEach(el => {
+    let t = +el.dataset.t + (el.dataset.clock === 'up' ? 1 : -1);
+    if (t < 0) t = 90;
+    el.dataset.t = t;
+    el.textContent = Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+  });
+}, 1000);
+render(); if (!window.SOLO && document.fonts) document.fonts.ready.then(render);
+</script></body></html>

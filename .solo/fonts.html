@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset=utf-8>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..600&family=Barlow+Condensed:ital,wght@0,600;0,700;1,600;1,700;1,800&family=Barlow:wght@400;500;600&family=Saira:ital,wdth,wght@0,50..125,100..900;1,50..125,100..900&family=Sofia+Sans:ital,wght@0,400..700;1,400..700&family=Sofia+Sans+Condensed:ital,wght@0,600..800;1,600..800&family=Sofia+Sans+Extra+Condensed:ital,wght@0,700..900;1,700..900&family=Anybody:ital,wdth,wght@0,50..150,100..900;1,50..150,100..900&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel=stylesheet href=style.css>
+<style>
+body{margin:0;background:#E7E4DE;font-family:'Barlow',sans-serif}
+#spec{display:grid;grid-template-columns:repeat(4,390px);gap:24px;padding:24px}
+.col h2{font:600 20px/1.2 'Hanken Grotesk',sans-serif;margin:0 0 4px;color:#16171A}
+.col p{font:400 13px/1.4 'Hanken Grotesk',sans-serif;margin:0 0 12px;color:#5C5E64}
+.col .scr{border-radius:40px;margin-bottom:24px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.fa .scr{--fb:'Barlow';--fd:'Barlow Condensed';--fd-st:100%;--fh-st:100%;--fd-it:italic;--fd-w:700;--fd-ls:-.005em}
+.fb .scr{--fb:'Saira';--fd:'Saira';--fd-st:72%;--fh-st:88%;--fd-it:italic;--fd-w:800;--fd-ls:-.02em}
+.fc .scr{--fb:'Sofia Sans';--fd:'Sofia Sans Extra Condensed';--fh:'Sofia Sans Condensed';--fd-st:100%;--fh-st:100%;--fd-it:italic;--fd-w:800;--fd-ls:-.01em}
+.fd .scr{--fb:'Hanken Grotesk';--fd:'Anybody';--fd-st:68%;--fh-st:82%;--fd-it:italic;--fd-w:800;--fd-ls:-.02em}
+</style></head><body><div id=app style="display:none"></div><div id=spec></div>
+<script>window.SOLO={screen:'today',stage:3,theme:'light',full:false}</script><script src=bundle.js></script>
+<script>
+const C=[['fa','A · Barlow Condensed + Barlow','Road-sign sport. Bold italic numbers, plain body.'],['fb','B · Saira','Racing and tech. One family, heavy italic display.'],['fc','C · Sofia Sans Extra Condensed','Modern athletic. Tall, tight italic numbers.'],['fd','D · Anybody + Hanken Grotesk','Loud and forward. Variable-width heavy italic.']];
+document.getElementById('spec').innerHTML=C.map(([k,t,d])=>`<div class="col ${k}"><h2>${t}</h2><p>${d}</p>${renderScreen('today',3,'light')}${renderScreen('live',3,'light')}</div>`).join('');
+</script></body></html>

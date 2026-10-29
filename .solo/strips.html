@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset=utf-8>
+<link href="https://fonts.googleapis.com/css2?family=Anybody:ital,wdth,wght@0,50..150,400..900;1,50..150,400..900&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel=stylesheet href=style.css>
+<style>
+body{margin:0;background:#E7E4DE}
+#spec{display:grid;grid-template-columns:repeat(3,390px);gap:28px;padding:24px}
+.col h2{font:italic 800 26px/1.1 'Anybody';font-stretch:82%;margin:0 0 4px;color:#16171A}
+.col p{font:400 13px/1.4 'Hanken Grotesk',sans-serif;margin:0 0 12px;color:#5C5E64;min-height:36px}
+.col .scr{border-radius:40px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.col .scr.sysbox{border-radius:24px;margin-top:20px;padding:20px}
+</style></head><body><div id=app style="display:none"></div><div id=spec></div>
+<script>window.SOLO={screen:'today',stage:3,theme:'light',full:false}</script><script src=bundle.js></script>
+<script>
+const V=[['segments','A · Sets as segments','Heights for effort, chunky blocks with gaps. A set of strides is one block cut into 6.'],
+         ['profile','B · One profile','Heights for effort, blocks joined into one silhouette, like a workout profile on a bike computer.'],
+         ['timeline','C · Flat timeline','One even bar. Colour alone carries effort; sets are cut into segments. Calmest, most like a progress bar.']];
+const ex=(t,k,o={})=>`<div class="eyebrow" style="margin:18px 0 ${o.at!=null?30:10}px">${t}</div>${strip(k,{labels:false,...o})}`;
+document.getElementById('spec').innerHTML=V.map(([v,t,d])=>{STRIP_V=v;
+  return `<div class="col"><h2>${t}</h2><p>${d}</p>${renderScreen('today',3,'light')}
+  <div class="scr sysbox" data-theme="light">
+   ${ex('Stage 1 · run 1½, walk 1½ × 6','rw15')}
+   ${ex('Hills · 8 × 45 s','hills')}
+   ${ex('Live · 17:42 in','e40s',{at:17.7,atLabel:'17:42'})}
+   ${ex('Planned vs done','e40s',{actual:SUMM[3].actual})}
+   ${ex('Marathon pace · 3 × 10 min','mp60')}
+   ${ex('Track · 6 × 800 m','i800')}
+  </div></div>`}).join('');
+</script></body></html>
